@@ -80,7 +80,7 @@ const ClothSelection = () => {
               640: { slidesPerView: 2 },
               1024: { slidesPerView: 3 },
             }}
-            className="pb-16" // Space for pagination dots
+            className="pb-16"
           >
             {items.map((item) => (
               <SwiperSlide key={item.id} className="py-4">

@@ -9,7 +9,7 @@ const Testimonials = () => {
       <div className="max-w-7xl mx-auto px-6">
         {/* Section Title */}
         <h2 className="text-center text-4xl md:text-5xl font-bold text-black mb-20 font-['Inter']">
-          Testimonial
+          What Our Customers Say
         </h2>
 
         {/* Testimonials Grid */}

@@ -33,7 +33,7 @@ const Header = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 w-full z-150 transition-all duration-500 ease-in-out ${
+      className={`overflow-hidden fixed top-0 left-0 w-full z-150 transition-all duration-500 ease-in-out ${
         scrolled
           ? "bg-white/90 backdrop-blur-md py-3 shadow-md"
           : "bg-[#4081a2] py-5"
