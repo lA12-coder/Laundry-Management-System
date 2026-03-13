@@ -19,7 +19,7 @@ const CommonHero = ({
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="scale-x-[0.66] max-w-4xl px-6 text-center z-10 relative mt-16"
+          className="relative scale-x-[0.66] max-w-4xl px-6 text-center z-10 relative mt-16"
         >
           <h1 className="text-5xl md:text-6xl font-black text-white mb-6 font-['shrikhand'] tracking-widest">
             {titlePrefix}{" "}
@@ -27,10 +27,10 @@ const CommonHero = ({
               {titleHighlight}
             </span>
           </h1>
-          <p className="text-white/90 text-lg md:text-xl leading-relaxed max-w-3xl mx-auto mb-8 font-medium">
+          <p className="text-white/90 text-lg md:text-2xl leading-relaxed max-w-3xl mx-auto mb-8 font-light font-['Inter']">
             {description}
           </p>
-          <p className="text-white/70 font-semibold uppercase tracking-widest text-sm">
+          <p className="text-white/70 font-light uppercase tracking-widest text-sm absolute top-60 left-1/2 -translate-x-1/2">
             <Link to="/">Home</Link> &gt; {breadcrumb}
           </p>
         </motion.div>

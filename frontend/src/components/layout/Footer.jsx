@@ -56,7 +56,6 @@ const Footer = () => {
                 "Home",
                 "About Us",
                 "Services",
-                "How it works",
                 "Contact us",
               ].map((item) => (
                 <Link

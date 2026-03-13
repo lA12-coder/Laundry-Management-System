@@ -26,11 +26,11 @@ const DifferentiatorSection = ({ title, items }) => {
               transition={{ duration: 0.6, delay: idx * 0.15 }}
               className="flex flex-col items-center"
             >
-              <div className="w-24 h-24 mb-6 flex items-center justify-center bg-transparent rounded-full transform transition-transform hover:-translate-y-2 hover:shadow-lg">
+              <div className=" w-40 mb-6 flex items-center justify-center bg-transparent rounded-full transform transition-transform hover:-translate-y-2">
                 <img
                   src={item.icon}
                   alt={item.title}
-                  className="w-16 h-16 object-contain"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">

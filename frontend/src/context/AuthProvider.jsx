@@ -1,55 +1,95 @@
-import { useState, useEffect } from "react";
+import { useEffect, useContext } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { AuthContext } from "./AuthContext.js";
-import api from "../services/api";
+import api from "../API/axios.js";
+import LaundryLoader from "../components/common/LaundryLoader";
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  logout,
+  setLoading,
+} from "../redux/userSlice";
 
 export const AuthProvider = ({ children }) => {
-  // Auth provider component defines the auth context for other child components to use
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { user, loading, isAuthenticated, error } = useSelector((state) => state.auth);
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
+  const logoutUser = () => {
+    dispatch(logout());
   };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
+      dispatch(loginStart());
       api
         .get("/users/me")
-        .then((res) => setUser(res.data))
-        .catch(() => logout())
-        .finally(() => setLoading(false));
+        .then((res) => {
+          dispatch(loginSuccess({ user: res.data, token }));
+        })
+        .catch(() => {
+          dispatch(logout());
+        });
     } else {
-      setTimeout(() => {
-        setUser(null);
-        setLoading(false);
-      }, 0);
+      dispatch(setLoading(false));
     }
-  }, []);
+  }, [dispatch]);
 
   const login = async (email, password) => {
+    dispatch(loginStart());
     try {
-      const res = await api.post("/users/login", { email, password });
-      localStorage.setItem("token", res.data.access);
-      setUser(res.data.user); // Only need this once
+      const res = await api.post("/auth/login", { email, password });
+      dispatch(
+        loginSuccess({
+          user: res.data.user,
+          token: res.data.access || res.data.token,
+        }),
+      );
     } catch (error) {
-      console.error("Login Failed", error);
+      dispatch(loginFailure(error.response?.data?.message || "Login Failed"));
+      throw error;
     }
   };
 
   const register = async (data) => {
+    dispatch(loginStart());
     try {
-      await api.post("/users/register", data);
+      const res = await api.post("/auth/signup", data);
+      dispatch(loginSuccess({ user: res.data.user, token: res.data.token }));
     } catch (error) {
-      console.error("Registration Failed", error);
+      dispatch(
+        loginFailure(error.response?.data?.message || "Registration Failed"),
+      );
+      throw error;
     }
   };
 
-  
+  const googleLogin = async (credential) => {
+    dispatch(loginStart());
+    try {
+      const res = await api.post("/auth/google", { token: credential });
+      dispatch(loginSuccess({ user: res.data.user, token: res.data.token }));
+    } catch (error) {
+      dispatch(loginFailure("Google Auth Failed"));
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
-      {!loading && children}
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        googleLogin,
+        logout: logoutUser,
+        loading,
+        isAuthenticated,
+        error,
+      }}
+    >
+      {loading ? <LaundryLoader /> : children}
     </AuthContext.Provider>
   );
 };

@@ -9,6 +9,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const totalQuantity = useSelector((state) => state.cart.totalQuantity);
+  const user = useSelector((state) => state.auth.user)
 
   // Handle scroll effect
   useEffect(() => {
@@ -59,13 +60,13 @@ const Header = () => {
           </p>
         </Link>
 
-        {/* Desktop Navigation */}
+        {/*Desktop Navigation*/}
         <div className="hidden md:flex items-center space-x-8">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               to={link.path}
-              className={`text-sm font-semibold transition-all duration-300 relative group ${
+              className={`text-md font-semibold transition-all duration-300 relative group ${
                 scrolled
                   ? "text-gray-700 hover:text-[#4081a2]"
                   : "text-white/90 hover:text-white"
@@ -75,6 +76,30 @@ const Header = () => {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#FD9837] transition-all duration-300 group-hover:w-full"></span>
             </Link>
           ))}
+
+          <button
+            onClick={() => navigate("/item-list")}
+            className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
+              scrolled
+                ? "bg-[#4081a2] text-white hover:bg-[#FD9837]"
+                : "bg-white text-[#4081a2] hover:bg-[#FD9837]"
+            }`}
+          >
+            Order Now
+          </button>
+
+          {user && user.role == "admin" && (
+            <button
+              onClick={() => navigate("/dashboard")}
+              className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
+                scrolled
+                  ? "bg-white text-[#4081a2] hover:bg-[#356d8a] border-2"
+                  : "border-white border-2 text-white hover:bg-white hover:text-[#4081a2]"
+              }`}
+            >
+              Dashboard
+            </button>
+          )}
         </div>
 
         {/* Action Buttons */}

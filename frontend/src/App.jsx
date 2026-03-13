@@ -1,38 +1,52 @@
 import { Routes, Route } from "react-router-dom";
-import Header from "./components/layout/Header";
-import Footer from "./components/layout/Footer";
 import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
 import Aboutus from "./pages/Aboutus";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import LoginPage from "./pages/Login";
+import SignupPage from "./pages/Signup";
 import ProtectRoute from "./components/common/ProtectedRoute";
 import ContactUs from "./pages/ContactUs";
-import "./App.css";
 import ServicesPage from "./pages/ServicePage";
+import ItemListPage from "./pages/ItemList";
+import CheckoutPage from "./pages/CheckoutPage";
+import Layout from "./components/layout/Layout";
+import "./App.css";
 
 function App() {
   return (
-    <>
-      <Header />
-      <Routes>
+    <Routes>
+      <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/about-us" element={<Aboutus/>} />
-        <Route path="/contact-us" element={<ContactUs/>} />
-        <Route path="/services" element={<ServicesPage/>} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectRoute>
+        <Route path="/about-us" element={<Aboutus />} />
+        <Route path="/contact-us" element={<ContactUs />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/item-list" element={<ItemListPage />} />
+      </Route>
+
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectRoute>
+            <Layout>
               <Dashboard />
-            </ProtectRoute>
-          }
-        />
-      </Routes>
-      <Footer />
-    </>
+            </Layout>
+          </ProtectRoute>
+        }
+      />
+      <Route
+        path="/checkout"
+        element={
+          <ProtectRoute>
+            <Layout>
+              <CheckoutPage />
+            </Layout>
+          </ProtectRoute>
+        }
+      />
+    </Routes>
   );
 }
 

@@ -20,6 +20,13 @@ import User3 from "../assets/img/User1.jpg";
 import OurStoryImg from "../assets/img/OurStoryImg.png";
 import Bubbles from "../assets/img/Bubbles.png";
 import ContactImg from "../assets/img/ContactImg.png";
+import EcoIcon from "../assets/img/eco.png";
+import ClockIcon from "../assets/img/clock.png";
+import BadgeIcon from "../assets/img/BadgeIcon.png";
+import WashAndFold from "../assets/img/WashAndFold.jpg";
+import DryCleaning from "../assets/img/DryCleaning.png";
+import Ironing from "../assets/img/Ironing.png";
+import SpecialRequest from "../assets/img/SpecialRequest.jpg";
 
 export const assets = {
   Logo,
@@ -37,6 +44,10 @@ export const assets = {
   OurStoryImg,
   Bubbles,
   ContactImg,
+  WashAndFold,
+  DryCleaning,
+  Ironing,
+  SpecialRequest,
 };
 
 export const items = [
@@ -146,54 +157,90 @@ export const servicesData = [
     description:
       "Our Wash & Fold service is more than just laundry, it's a complete refresh for your wardrobe. Using high-quality, eco-friendly detergents, we remove tough stains while preserving the softness and longevity of your fabrics...",
     image:
-      "https://images.unsplash.com/photo-1604335399105-a0c585fd81a1?q=80&w=800", // Replace with FoldImage
+      WashAndFold,  
     reverse: false,
   },
   {
     title: "Dry Cleaning",
     description:
       "Entrust your most valued garments to our expert Dry Cleaning services. Our experienced professionals are trained to handle a wide range of fabrics and delicate details with precision and care...",
-    image:
-      "https://images.unsplash.com/photo-1582735689141-b65b64eb8066?q=80&w=800",
+    image: DryCleaning,
     reverse: true,
   },
   {
     title: "Pressing and Ironing",
     description:
       "Our Pressing and Ironing service ensures your garments always look sharp and well-presented. From crisp creases in trousers to perfectly smooth dresses and shirts, our experienced team pays attention to every detail...",
-    image:
-      "https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?q=80&w=800",
+    image: Ironing,
     reverse: false,
   },
   {
     title: "Special Request",
     description:
       "Have a special laundry request? We're here to help. From treating stubborn stains to providing specialized care for delicate fabrics, our team is ready to customize the service according to your exact requirements...",
-    image:
-      "https://images.unsplash.com/photo-1545173168-9f1947eebb7f?q=80&w=800",
+    image: SpecialRequest,
     reverse: true,
   },
 ];
 
 export const differentiators = [
   {
-    icon: "/assets/icons/eco.png", // Update paths to your real icons
+    icon: EcoIcon,
     title: "Eco-Friendly",
     desc: "We use detergents that are tough on stains but gentle on the planet.",
   },
   {
-    icon: "/assets/icons/clock.png",
+    icon: ClockIcon,
     title: "Fast Turnaround",
-    desc: "72-hour standard turnaround with same-day express options available.",
+    desc: "48-hour standard turnaround with same-day express options available.",
   },
   {
-    icon: "/assets/icons/truck.png",
+    icon: DeliveryImg,
     title: "Free Pickup & Delivery",
     desc: "Convenient doorstep service to fit your busy schedule.",
   },
   {
-    icon: "/assets/icons/badge.png",
+    icon: BadgeIcon,
     title: "Quality Guarantee",
     desc: "100% satisfaction or we'll redo the service at no extra cost.",
+  },
+];
+
+export const products = [
+  {
+    id: 1,
+    name: "T-shirt",
+    price: 30,
+    image: "https://via.placeholder.com/150",
+  },
+  {
+    id: 2,
+    name: "Trouser",
+    price: 50,
+    image: "https://via.placeholder.com/150",
+  },
+  {
+    id: 3,
+    name: "2Pcs Suit",
+    price: 350,
+    image: "https://via.placeholder.com/150",
+  },
+  {
+    id: 4,
+    name: "Wedding Dress",
+    price: 2800,
+    image: "https://via.placeholder.com/150",
+  },
+  {
+    id: 5,
+    name: "Bathing Robe",
+    price: 350,
+    image: "https://via.placeholder.com/150",
+  },
+  {
+    id: 6,
+    name: "Bed Cover",
+    price: 550,
+    image: "https://via.placeholder.com/150",
   },
 ];
