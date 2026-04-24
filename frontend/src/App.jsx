@@ -9,43 +9,57 @@ import ContactUs from "./pages/ContactUs";
 import ServicesPage from "./pages/ServicePage";
 import ItemListPage from "./pages/ItemList";
 import CheckoutPage from "./pages/CheckoutPage";
+import VerifyEmailPage from "./pages/VerifyEmail";
 import Layout from "./components/layout/Layout";
 import "./App.css";
+import AdminLayout from "./components/admin/AdminLayout";
+import OrderManagementTable from "./components/admin/OrderManagementTable";
 
 function App() {
   return (
     <Routes>
+      {/* Admin Dashboard Routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectRoute>
+            <AdminLayout />
+          </ProtectRoute>
+        }
+      >
+        <Route path="orders" element={<OrderManagementTable />} />
+        {/* Additional admin routes can be added here */}
+      </Route>
+
+      {/* Customer Facing Routes */}
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<Aboutus />} />
         <Route path="/contact-us" element={<ContactUs />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/item-list" element={<ItemListPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectRoute>
+              <Dashboard />
+            </ProtectRoute>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectRoute>
+              <CheckoutPage />
+            </ProtectRoute>
+          }
+        />
       </Route>
 
+      {/* Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectRoute>
-        }
-      />
-      <Route
-        path="/checkout"
-        element={
-          <ProtectRoute>
-            <Layout>
-              <CheckoutPage />
-            </Layout>
-          </ProtectRoute>
-        }
-      />
+      <Route path="/verify-email/:uid/:token" element={<VerifyEmailPage />} />
     </Routes>
   );
 }

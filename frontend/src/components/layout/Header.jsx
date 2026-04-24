@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { useSelector } from "react-redux";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 
 const Header = () => {
   const [open, setOpen] = useState(false);
@@ -9,7 +11,8 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const totalQuantity = useSelector((state) => state.cart.totalQuantity);
-  const user = useSelector((state) => state.auth.user)
+  const user = useSelector((state) => state.auth.user);
+  const { logout } = useContext(AuthContext);
 
   // Handle scroll effect
   useEffect(() => {
@@ -90,7 +93,7 @@ const Header = () => {
 
           {user && user.role == "admin" && (
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/admin")}
               className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
                 scrolled
                   ? "bg-white text-[#4081a2] hover:bg-[#356d8a] border-2"
@@ -129,16 +132,29 @@ const Header = () => {
             </span>
           </div>
 
-          <button
-            onClick={() => navigate("/signup")}
-            className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
-              scrolled
-                ? "bg-[#4081a2] text-white hover:bg-[#356d8a]"
-                : "bg-[#FD9837] text-white hover:bg-white hover:text-[#4081a2]"
-            }`}
-          >
-            Sign Up
-          </button>
+          {user ? (
+            <button
+              onClick={logout}
+              className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
+                scrolled
+                  ? "bg-[#FD9837] text-white hover:bg-[#e6862f]"
+                  : "bg-white text-[#4081a2] hover:bg-[#FD9837] hover:text-white"
+              }`}
+            >
+              Log Out
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate("/signup")}
+              className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
+                scrolled
+                  ? "bg-[#4081a2] text-white hover:bg-[#356d8a]"
+                  : "bg-[#FD9837] text-white hover:bg-white hover:text-[#4081a2]"
+              }`}
+            >
+              Sign Up
+            </button>
+          )}
 
           {/* Mobile Toggle */}
           <button
@@ -196,12 +212,21 @@ const Header = () => {
           </div>
 
           <div className="mt-auto space-y-4">
-            <button
-              onClick={() => navigate("/signup")}
-              className="w-full py-4 bg-[#4081a2] text-white font-bold rounded-xl shadow-lg active:scale-105 hover:bg-[#69bde7]"
-            >
-              Get Started
-            </button>
+            {user ? (
+              <button
+                onClick={logout}
+                className="w-full py-4 bg-[#FD9837] text-white font-bold rounded-xl shadow-lg active:scale-105 hover:bg-[#e6862f]"
+              >
+                Log Out
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/signup")}
+                className="w-full py-4 bg-[#4081a2] text-white font-bold rounded-xl shadow-lg active:scale-105 hover:bg-[#69bde7]"
+              >
+                Get Started
+              </button>
+            )}
             <p className="text-center text-sm text-gray-500">
               Fast & Clean Laundry Services
             </p>

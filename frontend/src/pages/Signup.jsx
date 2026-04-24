@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
-import { GoogleLogin } from "@react-oauth/google";
 import AuthLayout from "../components/auth/AuthLayout";
 import LaundryLoader from "../components/common/LaundryLoader";
 import { useSelector } from "react-redux";
@@ -12,7 +11,6 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const {
     register: registerUser,
-    googleLogin,
     error,
   } = useContext(AuthContext);
   const { loading } = useSelector((state) => state.auth);
@@ -29,17 +27,15 @@ const SignupPage = () => {
 
   const onSignup = async (data) => {
     try {
-      await registerUser(data);
-      navigate("/");
-    } catch (err) {
-      // Error handled in context
-    }
-  };
-
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      await googleLogin(credentialResponse.credential);
-      navigate("/");
+      await registerUser({
+        full_name: data.full_name,
+        email: data.email,
+        phone_number: data.phone_number,
+        password: data.password,
+      });
+      navigate("/login", {
+        state: { message: "Registration successful. Check your email to verify your account." },
+      });
     } catch (err) {
       // Error handled in context
     }
@@ -68,17 +64,17 @@ const SignupPage = () => {
                   Full Name
                 </label>
                 <input
-                  {...register("name", { required: "Name is required" })}
+                  {...register("full_name", { required: "Name is required" })}
                   className={`w-full p-4 bg-gray-50 border rounded-xl outline-none transition-all ${
-                    errors.name
+                    errors.full_name
                       ? "border-red-400"
                       : "border-transparent focus:border-[#4c84a4]"
                   }`}
                   placeholder="John Doe"
                 />
-                {errors.name && (
+                {errors.full_name && (
                   <span className="text-red-500 text-[10px] font-bold">
-                    {errors.name.message}
+                    {errors.full_name.message}
                   </span>
                 )}
               </div>
@@ -87,17 +83,17 @@ const SignupPage = () => {
                   Phone
                 </label>
                 <input
-                  {...register("phone", { required: "Phone is required" })}
+                  {...register("phone_number", { required: "Phone is required" })}
                   className={`w-full p-4 bg-gray-50 border rounded-xl outline-none transition-all ${
-                    errors.phone
+                    errors.phone_number
                       ? "border-red-400"
                       : "border-transparent focus:border-[#4c84a4]"
                   }`}
                   placeholder="+251..."
                 />
-                {errors.phone && (
+                {errors.phone_number && (
                   <span className="text-red-500 text-[10px] font-bold">
-                    {errors.phone.message}
+                    {errors.phone_number.message}
                   </span>
                 )}
               </div>
@@ -139,7 +135,7 @@ const SignupPage = () => {
                   type="password"
                   {...register("password", {
                     required: "Password required",
-                    minLength: { value: 6, message: "Min 6 chars" },
+                    minLength: { value: 8, message: "Min 8 chars" },
                   })}
                   className={`w-full p-4 bg-gray-50 border rounded-xl outline-none transition-all ${
                     errors.password
@@ -160,6 +156,7 @@ const SignupPage = () => {
                 <input
                   type="password"
                   {...register("confirmPassword", {
+                    required: "Confirm password is required",
                     validate: (value) =>
                       value === password || "Passwords don't match",
                   })}
@@ -184,21 +181,6 @@ const SignupPage = () => {
               {loading ? "Creating Account..." : "Sign Up"}
             </button>
           </form>
-
-          {/* Social Login Section */}
-          <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-gray-100"></div>
-            <span className="px-4 text-xs font-bold text-gray-300">OR</span>
-            <div className="flex-1 border-t border-gray-100"></div>
-          </div>
-
-          <div className="flex justify-center mb-6">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => console.error("Google Auth Failed")}
-              shape="circle"
-            />
-          </div>
 
           <p className="text-center text-sm text-gray-500">
             Already have an account?{" "}

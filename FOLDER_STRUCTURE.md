@@ -180,7 +180,7 @@ fua-laundry/
 - PostGIS for geospatial features (optional)
 
 ## API Endpoints Structure
-- `/api/users/` - User management
+- `/api/accounts/` - User management
 - `/api/orders/` - Order management
 - `/api/inventory/` - Inventory management
 - `/api/customers/` - Customer management

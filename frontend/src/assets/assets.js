@@ -54,9 +54,9 @@ export const items = [
   { id: 1, name: "T-shirt", price: 30, image: TshirtImg },
   { id: 2, name: "Trouser", price: 50, image: TrouserImg },
   { id: 3, name: "Suit", price: 250, image: SuitImg },
-  { id: 1, name: "T-shirt", price: 30, image: TshirtImg },
-  { id: 2, name: "Trouser", price: 50, image: TrouserImg },
-  { id: 3, name: "Suit", price: 250, image: SuitImg },
+  { id: 4, name: "Dress", price: 150, image: TshirtImg },
+  { id: 5, name: "Jacket", price: 200, image: TrouserImg },
+  { id: 6, name: "Blanket", price: 300, image: SuitImg },
 ];
 
 export const plans = [

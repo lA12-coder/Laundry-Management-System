@@ -1,6 +1,5 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-import { GoogleLogin } from "@react-oauth/google";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import AuthLayout from "../components/auth/AuthLayout";
@@ -12,23 +11,17 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
+  const infoMessage = location.state?.message;
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm();
-  const { login, googleLogin } = useContext(AuthContext);
-  const { loading } = useSelector((state) => state.auth);
-
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      await googleLogin(credentialResponse.credential);
-      navigate(from, { replace: true });
-    } catch (error) {
-      console.error("Google Login Error:", error);
-    }
-  };
+  const { login, resendVerificationEmail } = useContext(AuthContext);
+  const { loading, error } = useSelector((state) => state.auth);
+  const emailValue = watch("email");
 
   const onLogin = async (data) => {
     try {
@@ -44,6 +37,16 @@ const LoginPage = () => {
       title="Welcome Back"
       subtitle="Please enter your details to login."
     >
+      {infoMessage && (
+        <p className="bg-blue-50 text-blue-700 p-3 rounded-lg mb-4 text-sm font-bold">
+          {infoMessage}
+        </p>
+      )}
+      {error && (
+        <p className="bg-red-50 text-red-500 p-3 rounded-lg mb-4 text-sm font-bold">
+          {error}
+        </p>
+      )}
       {loading ? (
         <LaundryLoader />
       ) : (
@@ -96,22 +99,24 @@ const LoginPage = () => {
             LOG IN
           </button>
 
-          <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-gray-100"></div>
-            <span className="px-4 text-xs font-bold text-gray-400 uppercase">
-              OR
-            </span>
-            <div className="flex-1 border-t border-gray-100"></div>
-          </div>
-
-          <div className="flex justify-center">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => console.error("Google Auth Failed")}
-              useOneTap
-              shape="circle"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!emailValue) return;
+              try {
+                await resendVerificationEmail(emailValue);
+                navigate("/login", {
+                  replace: true,
+                  state: { message: "Verification email resent successfully." },
+                });
+              } catch (resendError) {
+                // Global auth error state will display backend message.
+              }
+            }}
+            className="w-full mt-4 text-sm text-[#4c84a4] font-semibold hover:underline"
+          >
+            Resend verification email
+          </button>
           <p className="text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link to="/signup" className="text-[#FD9837] font-bold italic">

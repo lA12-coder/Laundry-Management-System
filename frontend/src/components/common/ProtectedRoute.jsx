@@ -5,16 +5,15 @@ import LaundryLoader from "./LaundryLoader";
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   const location = useLocation();
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <LaundryLoader />
       </div>
     );
+  }
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   return children;
 };

@@ -1,4 +1,4 @@
-import { useEffect, useContext } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AuthContext } from "./AuthContext.js";
 import api from "../API/axios.js";
@@ -15,8 +15,35 @@ export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   const { user, loading, isAuthenticated, error } = useSelector((state) => state.auth);
 
-  const logoutUser = () => {
+  const extractApiError = (apiError, fallbackMessage) => {
+    const responseData = apiError?.response?.data;
+    if (!responseData) return fallbackMessage;
+
+    if (responseData.errors && typeof responseData.errors === "object") {
+      const [firstField] = Object.keys(responseData.errors);
+      const firstMessage = responseData.errors[firstField]?.[0];
+      if (firstMessage) return `${firstField}: ${firstMessage}`;
+    }
+
+    return responseData.message || fallbackMessage;
+  };
+
+  const logoutUser = async () => {
+    const refresh = localStorage.getItem("refreshToken");
+    if (refresh) {
+      try {
+        await api.post("/accounts/logout/", { refresh });
+      } catch (_error) {
+        // Logout should still clear local session if server-side blacklisting fails.
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("token");
+        dispatch(logout());
+        dispatch(setLoading(false));
+        return;
+      }
+    }
     dispatch(logout());
+    dispatch(setLoading(false));
   };
 
   useEffect(() => {
@@ -24,9 +51,9 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       dispatch(loginStart());
       api
-        .get("/users/me")
+        .get("/accounts/me/")
         .then((res) => {
-          dispatch(loginSuccess({ user: res.data, token }));
+          dispatch(loginSuccess({ user: res.data?.data, token }));
         })
         .catch(() => {
           dispatch(logout());
@@ -39,15 +66,17 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     dispatch(loginStart());
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("/accounts/login/", { email, password });
+      const payload = res.data?.data || {};
       dispatch(
         loginSuccess({
-          user: res.data.user,
-          token: res.data.access || res.data.token,
+          user: payload.user,
+          token: payload.access,
+          refreshToken: payload.refresh,
         }),
       );
     } catch (error) {
-      dispatch(loginFailure(error.response?.data?.message || "Login Failed"));
+      dispatch(loginFailure(extractApiError(error, "Login Failed")));
       throw error;
     }
   };
@@ -55,25 +84,33 @@ export const AuthProvider = ({ children }) => {
   const register = async (data) => {
     dispatch(loginStart());
     try {
-      const res = await api.post("/auth/signup", data);
-      dispatch(loginSuccess({ user: res.data.user, token: res.data.token }));
+      const payload = {
+        username: data.email?.split("@")[0] || data.full_name?.replace(/\s+/g, "_"),
+        full_name: data.full_name,
+        email: data.email,
+        phone_number: data.phone_number,
+        password: data.password,
+      };
+      await api.post("/accounts/register/", payload);
+      dispatch(setLoading(false));
     } catch (error) {
-      dispatch(
-        loginFailure(error.response?.data?.message || "Registration Failed"),
-      );
+      dispatch(loginFailure(extractApiError(error, "Registration Failed")));
       throw error;
     }
   };
 
   const googleLogin = async (credential) => {
     dispatch(loginStart());
-    try {
-      const res = await api.post("/auth/google", { token: credential });
-      dispatch(loginSuccess({ user: res.data.user, token: res.data.token }));
-    } catch (error) {
-      dispatch(loginFailure("Google Auth Failed"));
-      throw error;
-    }
+    dispatch(loginFailure("Google login is not available yet."));
+    throw new Error("Google login endpoint is not implemented on backend.");
+  };
+
+  const verifyEmail = async (uid, token) => {
+    return api.get(`/accounts/verify-email/${uid}/${token}/`);
+  };
+
+  const resendVerificationEmail = async (email) => {
+    return api.post("/accounts/resend-verification-email/", { email });
   };
 
   return (
@@ -84,6 +121,8 @@ export const AuthProvider = ({ children }) => {
         register,
         googleLogin,
         logout: logoutUser,
+        verifyEmail,
+        resendVerificationEmail,
         loading,
         isAuthenticated,
         error,

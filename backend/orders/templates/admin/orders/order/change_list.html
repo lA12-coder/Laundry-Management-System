@@ -1,0 +1,50 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+  <h1>Order Lifecycle Management</h1>
+{% endblock %}
+
+{% block result_list %}
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px 0;">
+    <div style="padding:12px;border:1px solid #d1d5db;border-radius:8px;">
+      <strong>Total Revenue</strong>
+      <div>{{ dashboard_metrics.total_revenue }}</div>
+    </div>
+    <div style="padding:12px;border:1px solid #d1d5db;border-radius:8px;">
+      <strong>Active Orders</strong>
+      <div>{{ dashboard_metrics.active_orders }}</div>
+    </div>
+    <div style="padding:12px;border:1px solid #d1d5db;border-radius:8px;">
+      <strong>Pending Pickups</strong>
+      <div>{{ dashboard_metrics.pending_pickups }}</div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <h2 style="margin-bottom:8px;">Top Partner Performance</h2>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left;border-bottom:1px solid #d1d5db;padding:8px;">Partner</th>
+          <th style="text-align:left;border-bottom:1px solid #d1d5db;padding:8px;">Completed Orders</th>
+          <th style="text-align:left;border-bottom:1px solid #d1d5db;padding:8px;">Earnings</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in partner_performance %}
+          <tr>
+            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">{{ row.partner__business_name|default:"Unassigned" }}</td>
+            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">{{ row.completed_orders }}</td>
+            <td style="padding:8px;border-bottom:1px solid #e5e7eb;">{{ row.earnings }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="3" style="padding:8px;">No partner data available.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {{ block.super }}
+{% endblock %}
