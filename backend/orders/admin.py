@@ -1,12 +1,10 @@
 
 from django.contrib import admin
-from .models import Order
-from django.contrib import admin
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Value, DecimalField
 from django.db.models.functions import Coalesce
 
 from accounts.models import User
-from .models import AdminActionLog, Order, TransactionLog
+from .models import AdminActionLog, Order, TransactionLog, PriceList
 
 
 class AdminRoleRestrictedMixin:
@@ -32,7 +30,7 @@ class OrderAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
         "partner",
         "rider",
         "total_amount",
-        "updated_at",
+        "created_at",
     )
     
     list_filter = ("status", "partner", "rider")
@@ -50,7 +48,7 @@ class OrderAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
         active_statuses = [Order.Status.PENDING, Order.Status.PICKED_UP, Order.Status.WASHING]
 
         metrics = queryset.aggregate(
-            total_revenue=Coalesce(Sum("total_amount"), 0),
+            total_revenue=Coalesce(Sum("total_amount"), Value(0, output_field=DecimalField())),
             active_orders=Count("id", filter=Q(status__in=active_statuses)),
             pending_pickups=Count("id", filter=Q(status=Order.Status.PENDING)),
         )
@@ -58,7 +56,7 @@ class OrderAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
             queryset.values("partner__business_name")
             .annotate(
                 completed_orders=Count("id", filter=Q(status=Order.Status.DELIVERED)),
-                earnings=Coalesce(Sum("partner_earning"), 0),
+                earnings=Coalesce(Sum("partner_earning"), Value(0, output_field=DecimalField())),
             )
             .order_by("-completed_orders")[:5]
         )
@@ -74,7 +72,6 @@ class TransactionLogAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
     list_display = (
         "order",
         "partner_earning",
-        "rider_fee",
         "fualaundry_commission",
         "created_at",
     )
@@ -93,3 +90,11 @@ class AdminActionLogAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("admin_user", "order")
+
+
+@admin.register(PriceList)
+class PriceListAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
+    list_display = ("cloth_name", "size", "fua_price", "partner_price", "is_active")
+    list_filter = ("size", "is_active")
+    search_fields = ("cloth_name",)
+    list_editable = ("fua_price", "partner_price", "is_active")
