@@ -132,7 +132,7 @@ export const testimonials = [
 
 export const teamMembers = [
   {
-    name: "Eyob Abdisa",
+    name: "Eyuel Getachew",
     role: "Founder and CEO",
     bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec placerat odio quis enim semper.",
     image: "/path-to-eyob.png",
@@ -144,12 +144,19 @@ export const teamMembers = [
     image: "/path-to-lidet.png",
   },
   {
-    name: "Kidist Wubshet",
+    name: "Ermiyas Mulugeta",
     role: "Co-Founder & Marketing Lead",
     bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec placerat odio quis enim semper.",
     image: "/path-to-member3.png",
   },
+  {
+    name: "Frehiwot",
+    ole: "Sales Manager",
+    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec placerat odio quis enim semper.",
+    image: "/path-to-member3.png",
+  },
 ];
+
 
 export const servicesData = [
   {

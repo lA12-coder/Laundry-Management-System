@@ -136,7 +136,7 @@ const ClothSelection = () => {
 
         {/* View All Link */}
         <div className="mt-8 text-right">
-          <button className="text-[#4081a2] font-bold hover:underline flex items-center gap-1 ml-auto text-sm uppercase tracking-wider" onClick={()=>navigate("/all-items")}>
+          <button className="text-[#4081a2] font-bold hover:underline flex items-center gap-1 ml-auto text-sm uppercase tracking-wider" onClick={()=>navigate("/item-list")}>
             View All Items {">>"}
           </button>
         </div>

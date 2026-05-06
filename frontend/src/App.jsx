@@ -14,24 +14,26 @@ import Layout from "./components/layout/Layout";
 import "./App.css";
 import AdminLayout from "./components/admin/AdminLayout";
 import OrderManagementTable from "./components/admin/OrderManagementTable";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import PartnerManagement from "./pages/admin/PartnerManagement";
+import FinancialManagement from "./pages/admin/FinancialManagement";
+import CustomerManagement from "./pages/admin/CustomerManagement";
+import RiderManagement from "./pages/admin/RiderManagement";
 
 function App() {
   return (
     <Routes>
-      {/* Admin Dashboard Routes */}
-      <Route
-        path="/admin"
-        element={
-          <ProtectRoute>
-            <AdminLayout />
-          </ProtectRoute>
-        }
-      >
+      {/* ─── Admin Dashboard Routes ─────────────────────────────── */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboard />} />
         <Route path="orders" element={<OrderManagementTable />} />
-        {/* Additional admin routes can be added here */}
+        <Route path="customers" element={<CustomerManagement />} />
+        <Route path="riders" element={<RiderManagement />} />
+        <Route path="partners" element={<PartnerManagement />} />
+        <Route path="financials" element={<FinancialManagement />} />
       </Route>
 
-      {/* Customer Facing Routes */}
+      {/* ─── Customer-Facing Routes ─────────────────────────────── */}
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<Aboutus />} />
@@ -40,23 +42,15 @@ function App() {
         <Route path="/item-list" element={<ItemListPage />} />
         <Route
           path="/dashboard"
-          element={
-            <ProtectRoute>
-              <Dashboard />
-            </ProtectRoute>
-          }
+          element={<ProtectRoute><Dashboard /></ProtectRoute>}
         />
         <Route
           path="/checkout"
-          element={
-            <ProtectRoute>
-              <CheckoutPage />
-            </ProtectRoute>
-          }
+          element={<ProtectRoute><CheckoutPage /></ProtectRoute>}
         />
       </Route>
 
-      {/* Auth Routes */}
+      {/* ─── Auth Routes ────────────────────────────────────────── */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/verify-email/:uid/:token" element={<VerifyEmailPage />} />

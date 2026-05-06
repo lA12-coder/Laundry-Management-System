@@ -29,7 +29,6 @@ class LaundryPartnerAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
         "is_approved",
         "is_active",
         "capacity_per_day",
-        "commission_rate",
     )
     list_filter = ("is_approved", "is_active")
     search_fields = ("business_name", "owner__email")

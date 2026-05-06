@@ -19,7 +19,6 @@ class LaundryPartnerSerializer(serializers.ModelSerializer):
             "is_approved",
             "is_active",
             "capacity_per_day",
-            "commission_rate",
             "current_load",
             "pending_orders",
             "payout_total",

@@ -16,10 +16,9 @@ class PriceList(models.Model):
         LARGE = "large", "Large"
 
     cloth_name = models.CharField(max_length=255)
+    image = models.ImageField(upload_to="cloth_images", null=True, blank=True)
     size = models.CharField(max_length=20, choices=Size.choices, default=Size.SMALL)
-    # What the customer pays FuaLaundry
     fua_price = models.DecimalField(max_digits=12, decimal_places=2)
-    # What FuaLaundry pays the partner
     partner_price = models.DecimalField(max_digits=12, decimal_places=2)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
