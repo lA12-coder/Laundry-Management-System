@@ -176,14 +176,7 @@ class LogoutView(APIView):
             data={},
             http_status=status.HTTP_200_OK,
         )
-
-
-class ProfileUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ("full_name", "phone_number", "home_address")
-
-
+        
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -192,64 +185,6 @@ class MeView(APIView):
             status_text="success",
             message="User profile fetched successfully.",
             data=UserDetailSerializer(request.user).data,
-            http_status=status.HTTP_200_OK,
-        )
-
-    def patch(self, request: Any, *args: Any, **kwargs: Any) -> Response:
-        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
-        if not serializer.is_valid():
-            return json_response(
-                status_text="error",
-                message="Validation failed.",
-                errors=serializer.errors,
-                http_status=status.HTTP_400_BAD_REQUEST,
-            )
-        serializer.save()
-        return json_response(
-            status_text="success",
-            message="Profile updated successfully.",
-            data=UserDetailSerializer(request.user).data,
-            http_status=status.HTTP_200_OK,
-        )
-
-
-class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True, min_length=8)
-
-class ChangePasswordView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
-        serializer = ChangePasswordSerializer(data=request.data)
-        if not serializer.is_valid():
-            return json_response(
-                status_text="error",
-                message="Validation failed.",
-                errors=serializer.errors,
-                http_status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        user = request.user
-        if not user.check_password(serializer.validated_data.get("old_password")):
-            return json_response(
-                status_text="error",
-                message="Invalid old password.",
-                http_status=status.HTTP_400_BAD_REQUEST,
-            )
-            
-        user.set_password(serializer.validated_data.get("new_password"))
-        
-        # If ghost user changes password, we consider them "active" now
-        if not user.is_active:
-            user.is_active = True
-            
-        user.save()
-        
-        return json_response(
-            status_text="success",
-            message="Password updated successfully.",
-            data={},
             http_status=status.HTTP_200_OK,
         )
 
