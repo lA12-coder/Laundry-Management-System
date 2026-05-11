@@ -13,7 +13,7 @@ router.register(r'dashboard-metrics', DashboardMetricsViewSet, basename="admin-d
 router.register(r'orders', OrderManagementViewSet, basename="admin-order-management")
 router.register(r'transactions', FinancialTransactionViewSet, basename="admin-transactions")
 router.register(r'audit-logs', AdminActionLogViewSet, basename="admin-audit-logs")
-router.register(r'price-list', PriceListViewSet, basename="admin-pricelist")
+router.register(r'price-list', PriceListViewSet, basename="pricelist")
 
 urlpatterns = [
     path('', include(router.urls)),

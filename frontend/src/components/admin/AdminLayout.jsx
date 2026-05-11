@@ -109,7 +109,6 @@ export default function AdminLayout() {
           {/* Logo */}
           <div className="flex items-center h-16 px-4 border-b border-gray-100">
             <Link to="/admin" className="flex items-center gap-3 overflow-hidden">
-              <img src={assets.logo} alt="FuaLaundry" className="w-9 h-9 object-contain flex-shrink-0" />
               {isSidebarOpen && (
                 <div className="overflow-hidden">
                   <span className="text-lg font-black italic text-gray-900 tracking-tight block truncate">

@@ -19,6 +19,7 @@ import PartnerManagement from "./pages/admin/PartnerManagement";
 import FinancialManagement from "./pages/admin/FinancialManagement";
 import CustomerManagement from "./pages/admin/CustomerManagement";
 import RiderManagement from "./pages/admin/RiderManagement";
+import ProfileSettings from "./pages/customer/ProfileSettings.tsx";
 
 function App() {
   return (
@@ -47,6 +48,10 @@ function App() {
         <Route
           path="/checkout"
           element={<ProtectRoute><CheckoutPage /></ProtectRoute>}
+        />
+        <Route
+          path="/profile"
+          element={<ProtectRoute><ProfileSettings /></ProtectRoute>}
         />
       </Route>
 

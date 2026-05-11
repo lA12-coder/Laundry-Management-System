@@ -60,8 +60,43 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "role",
             "is_verified",
             "is_active",
+            "home_address",
+            "mfa_enabled",
+            "sms_notifications",
+            "email_receipts",
+            "marketing_updates",
+            "secondary_addresses",
         )
         read_only_fields = fields
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("full_name", "email", "phone_number", "home_address", "secondary_addresses")
+
+    def validate_phone_number(self, value: str) -> str:
+        return validate_e164_phone_number(value)
+
+    def validate_email(self, value: str) -> str:
+        return value.strip().lower()
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, min_length=8, write_only=True)
+
+
+class NotificationPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("sms_notifications", "email_receipts", "marketing_updates")
+
+
+class SecuritySettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("mfa_enabled",)
 
 
 class UserLoginSerializer(TokenObtainPairSerializer):

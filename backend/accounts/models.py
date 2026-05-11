@@ -18,6 +18,11 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     home_address = models.CharField(max_length=255, blank=True, null=True)
+    secondary_addresses = models.JSONField(default=list, blank=True)
+    mfa_enabled = models.BooleanField(default=False)
+    sms_notifications = models.BooleanField(default=True)
+    email_receipts = models.BooleanField(default=True)
+    marketing_updates = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'phone_number']

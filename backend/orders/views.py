@@ -187,7 +187,13 @@ class DashboardMetricsViewSet(viewsets.ViewSet):
     permission_classes = [IsStaffAdminRole]
 
     def list(self, request):
-        active_statuses = [Order.Status.PENDING, Order.Status.PICKED_UP, Order.Status.WASHING]
+        active_statuses = [
+            Order.Status.PENDING,
+            Order.Status.PICKED_UP,
+            Order.Status.WASHING,
+            Order.Status.READY,
+            Order.Status.OUT_FOR_DELIVERY,
+        ]
 
         # Aggregate global metrics
         metrics = Order.objects.aggregate(

@@ -3,9 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Package, Clock, Truck, CheckCircle, BellRing, Settings, Loader2, ArrowRight } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
-import api from '../API/axios';
+import api from "../../API/axios";
 import { Link } from 'react-router-dom';
-import { useNotificationStore } from '../stores/notificationStore';
+import { useNotificationStore } from "../../stores/notificationStore";
 
 // The linear progression of order statuses
 const STATUS_STEPS = [

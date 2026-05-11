@@ -10,10 +10,12 @@ import {
   logout,
   setLoading,
 } from "../redux/userSlice";
+import { useCustomerSessionStore } from "../stores/customerSessionStore";
 
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   const { user, loading, isAuthenticated, error } = useSelector((state) => state.auth);
+  const setGhostUser = useCustomerSessionStore((state) => state.setGhostUser);
 
   const extractApiError = (apiError, fallbackMessage) => {
     const responseData = apiError?.response?.data;
@@ -33,7 +35,7 @@ export const AuthProvider = ({ children }) => {
     if (refresh) {
       try {
         await api.post("/accounts/logout/", { refresh });
-      } catch (_error) {
+      } catch {
         // Logout should still clear local session if server-side blacklisting fails.
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("token");
@@ -62,6 +64,10 @@ export const AuthProvider = ({ children }) => {
       dispatch(setLoading(false));
     }
   }, [dispatch]);
+
+  useEffect(() => {
+    setGhostUser(Boolean(user) && user.is_active === false);
+  }, [user, setGhostUser]);
 
   const login = async (email, password) => {
     dispatch(loginStart());
@@ -99,7 +105,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const googleLogin = async (credential) => {
+  const googleLogin = async () => {
     dispatch(loginStart());
     dispatch(loginFailure("Google login is not available yet."));
     throw new Error("Google login endpoint is not implemented on backend.");

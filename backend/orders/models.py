@@ -31,7 +31,7 @@ class PriceList(models.Model):
         verbose_name_plural = "Price List"
 
     def __str__(self) -> str:
-        return f"{self.cloth_name} ({self.get_size_display()}) — Ksh {self.fua_price}"
+        return f"{self.cloth_name} ({self.get_size_display()}) — ETB {self.fua_price}"
 
 
 class Order(models.Model):
@@ -40,6 +40,7 @@ class Order(models.Model):
         PICKED_UP = "picked_up", "Picked Up"
         WASHING = "washing", "Washing"
         READY = "ready", "Ready to Deliver"
+        OUT_FOR_DELIVERY = "out_for_delivery", "Out for Delivery"
         DELIVERED = "delivered", "Delivered"
         CANCELLED = "cancelled", "Cancelled"
 

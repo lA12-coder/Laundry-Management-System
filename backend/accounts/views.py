@@ -17,8 +17,12 @@ from .signals import send_verification_email
 User = get_user_model()
 
 from .serializers import (
+    ChangePasswordSerializer,
+    NotificationPreferenceSerializer,
+    SecuritySettingsSerializer,
     UserDetailSerializer,
     UserLoginSerializer,
+    UserProfileUpdateSerializer,
     UserRegistrationSerializer,
 )
 
@@ -185,6 +189,126 @@ class MeView(APIView):
             status_text="success",
             message="User profile fetched successfully.",
             data=UserDetailSerializer(request.user).data,
+            http_status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = UserProfileUpdateSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+        )
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return json_response(
+                status_text="error",
+                message="Profile update failed due to validation errors.",
+                errors=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer.save()
+        return json_response(
+            status_text="success",
+            message="Profile updated successfully.",
+            data=UserDetailSerializer(request.user).data,
+            http_status=status.HTTP_200_OK,
+        )
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = ChangePasswordSerializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return json_response(
+                status_text="error",
+                message="Password change failed due to validation errors.",
+                errors=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        old_password = serializer.validated_data["old_password"]
+        new_password = serializer.validated_data["new_password"]
+        user = request.user
+
+        if not user.check_password(old_password):
+            return json_response(
+                status_text="error",
+                message="Current password is incorrect.",
+                errors={"old_password": ["Current password is incorrect."]},
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        return json_response(
+            status_text="success",
+            message="Password changed successfully.",
+            data={},
+            http_status=status.HTTP_200_OK,
+        )
+
+
+class NotificationPreferenceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = NotificationPreferenceSerializer(request.user)
+        return json_response(
+            status_text="success",
+            message="Notification preferences fetched successfully.",
+            data=serializer.data,
+            http_status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = NotificationPreferenceSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+        )
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return json_response(
+                status_text="error",
+                message="Notification preferences update failed.",
+                errors=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer.save()
+        return json_response(
+            status_text="success",
+            message="Notification preferences updated successfully.",
+            data=serializer.data,
+            http_status=status.HTTP_200_OK,
+        )
+
+
+class SecuritySettingsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = SecuritySettingsSerializer(request.user, data=request.data, partial=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return json_response(
+                status_text="error",
+                message="Security settings update failed.",
+                errors=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer.save()
+        return json_response(
+            status_text="success",
+            message="Security settings updated successfully.",
+            data=serializer.data,
             http_status=status.HTTP_200_OK,
         )
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   MapPin,
   Clock,
@@ -13,12 +13,17 @@ import {
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import LaundryLoader from "../components/common/LaundryLoader";
+import api from "../API/axios";
+import { toast } from "react-hot-toast";
+import { clearCart } from "../redux/cartSlice";
+import { formatETB } from "../lib/currency";
 
 const CheckoutPage = () => {
   const { items, totalAmount, totalQuantity } = useSelector(
     (state) => state.cart,
   );
   const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const phoneNumber = "+251970713018";
@@ -36,22 +41,33 @@ const CheckoutPage = () => {
 
   const onSubmit = async (data) => {
     setLoading(true);
-    const orderPayload = {
-      customer: user?.id,
-      items: items,
-      total: finalTotal,
-      urgency,
-      urgencyFee,
-      shippingDetails: data,
-      status: "Pending",
-    };
-    console.log("Final Order Payload:", orderPayload);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const normalizedPhone = data.phone.startsWith("+")
+        ? data.phone
+        : data.phone.startsWith("0")
+          ? `+251${data.phone.slice(1)}`
+          : `+251${data.phone}`;
+      const delivery_address = `${data.city}, ${data.subcity}, ${data.kebele}`.trim();
+      const payload = {
+        customer: user?.id,
+        customer_name: user?.full_name || "Guest Customer",
+        customer_phone: normalizedPhone,
+        delivery_address,
+        urgency,
+        items: items.map((item) => ({
+          price_list_entry_id: item.price_list_entry_id || item.id,
+          quantity: item.quantity,
+        })),
+      };
+      await api.post("/orders/", payload);
+      dispatch(clearCart());
+      toast.success("Order placed successfully.");
       setLoading(false);
-      alert("Order placed successfully!");
       navigate("/dashboard");
-    }, 2000);
+    } catch (error) {
+      setLoading(false);
+      toast.error(error?.response?.data?.error || "Unable to place order.");
+    }
   };
 
   return (
@@ -298,7 +314,7 @@ const CheckoutPage = () => {
                         urgent orders
                       </span>
                       , the price increases by{" "}
-                      <span className="text-[#FD9837] font-black">10 ETB</span>{" "}
+                      <span className="text-[#FD9837] font-black">ETB 20</span>{" "}
                       per item.
                     </p>
                   </div>
@@ -349,7 +365,7 @@ const CheckoutPage = () => {
                 <div className="space-y-4 mb-10">
                   <div className="flex justify-between text-gray-500 font-bold italic">
                     <span>Subtotal</span>
-                    <span>{totalAmount} Birr</span>
+                    <span>{formatETB(totalAmount)}</span>
                   </div>
                   <div className="flex justify-between text-gray-500 font-bold italic">
                     <span>Delivery Fee</span>
@@ -360,7 +376,7 @@ const CheckoutPage = () => {
                   {urgencyFee > 0 && (
                     <div className="flex justify-between text-gray-500 font-bold italic">
                       <span>Urgency Fee</span>
-                      <span>{urgencyFee} Birr</span>
+                      <span>{formatETB(urgencyFee)}</span>
                     </div>
                   )}
                   <div className="pt-6 mt-6 border-t-2 border-dashed border-gray-100 flex justify-between items-center">
@@ -368,7 +384,7 @@ const CheckoutPage = () => {
                       Total Amount
                     </span>
                     <span className="text-4xl font-black italic text-[#FD9837]">
-                      {finalTotal} <small className="text-sm">Birr</small>
+                      {formatETB(finalTotal)}
                     </span>
                   </div>
                 </div>

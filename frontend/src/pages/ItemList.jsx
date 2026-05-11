@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Search, RotateCcw, Plus, Minus, ShoppingBag,Trash2 } from "lucide-react";
-import { products } from "../assets/assets";
-import { addToCart,removeFromCart} from "../redux/cartSlice";
+import { Search, RotateCcw, Plus, Minus, ShoppingBag, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { addToCart, removeFromCart } from "../redux/cartSlice";
 import CommonHero from "../components/common/CommonHero";
 import { useNavigate } from "react-router-dom";
+import api from "../API/axios";
+import { formatETB } from "../lib/currency";
 
 const ItemListPage = () => {
   const navigate = useNavigate();
@@ -12,6 +14,14 @@ const ItemListPage = () => {
   const { items, totalAmount } = useSelector((state) => state.cart);
   const [searchTerm, setSearchTerm] = useState("");
   const [localQuantities, setLocalQuantities] = useState({});
+  const { data: products = [] } = useQuery({
+    queryKey: ["priceList"],
+    queryFn: async () => {
+      const res = await api.get("/admin/price-list/");
+      return Array.isArray(res.data) ? res.data : [];
+    },
+    staleTime: 60_000,
+  });
 
   // Updates the number on the card without affecting Redux
   const handleUpdateLocalQty = (id, delta) => {
@@ -25,7 +35,17 @@ const ItemListPage = () => {
   const handleAddToBasket = (product) => {
     const qty = localQuantities[product.id] || 0;
     if (qty > 0) {
-      dispatch(addToCart({ ...product, quantity: qty }));
+      dispatch(
+        addToCart({
+          id: product.id,
+          price_list_entry_id: product.id,
+          cloth_name: product.cloth_name,
+          size: product.size,
+          price: Number(product.fua_price),
+          image: product.image,
+          quantity: qty,
+        }),
+      );
       setLocalQuantities((prev) => ({ ...prev, [product.id]: 0 }));
     }
   };
@@ -38,7 +58,7 @@ const ItemListPage = () => {
   };
 
   const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    p.cloth_name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const handleRemoveFromBasket = (id) => {
@@ -92,16 +112,16 @@ const ItemListPage = () => {
                     <div className="h-48 bg-gray-50 rounded-2xl mb-6 flex items-center justify-center p-4">
                       <img
                         src={product.image}
-                        alt={product.name}
+                        alt={product.cloth_name}
                         className="max-h-full object-contain"
                       />
                     </div>
 
                     <h3 className="text-2xl font-black italic text-gray-900 text-center mb-1 uppercase tracking-tight">
-                      {product.name}
+                      {product.cloth_name}
                     </h3>
                     <p className="text-[#4c84a4] font-bold text-center mb-6">
-                      {product.price} Birr
+                      {formatETB(product.fua_price)}
                     </p>
 
                     {/* Local Quantity Control */}
@@ -172,14 +192,14 @@ const ItemListPage = () => {
                       className="flex justify-between font-bold text-gray-600 border-b border-gray-200/50 pb-2"
                     >
                       <span>
-                        {item.name}{" "}
+                        {item.cloth_name || item.name}{" "}
                         <span className="text-[#4c84a4] ml-1">
                           x{item.quantity}
                         </span>
                       </span>
                       <div className="flex items-center justify-center space-x-1">
                         <span className="text-gray-900">
-                          {item.price * item.quantity} Birr
+                          {formatETB(item.price * item.quantity)}
                         </span>
                         <button
                           onClick={() => handleRemoveFromBasket(item.id)}
@@ -199,7 +219,7 @@ const ItemListPage = () => {
                     Total Amount
                   </span>
                   <span className="text-4xl font-black italic text-[#FD9837]">
-                    {totalAmount} Birr
+                    {formatETB(totalAmount)}
                   </span>
                 </div>
 
