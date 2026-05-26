@@ -43,12 +43,12 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isPending, submitLabe
   });
 
   const fieldCls =
-    "w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#4c84a4]/30 outline-none";
+    "w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-[#4c84a4]/30 dark:focus:ring-sky-500/30 outline-none";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
       <div>
-        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+        <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
           Name
         </label>
         <input {...register("name")} className={fieldCls} placeholder="e.g. Premium" />
@@ -57,7 +57,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isPending, submitLabe
         )}
       </div>
       <div>
-        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+        <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
           Description
         </label>
         <textarea
@@ -69,7 +69,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isPending, submitLabe
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Sort order
           </label>
           <input
@@ -83,7 +83,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isPending, submitLabe
           )}
         </div>
         <div className="flex items-end pb-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-600">
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
             <input type="checkbox" {...register("is_active")} className="rounded" />
             Active
           </label>
@@ -94,7 +94,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isPending, submitLabe
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 text-sm font-semibold text-gray-500"
+            className="px-3 py-1.5 text-sm font-semibold text-gray-500 dark:text-gray-300"
           >
             Cancel
           </button>
@@ -129,9 +129,13 @@ function EditCategoryRow({ category, canEdit, onSave, onDelete, isSaving, isDele
 
   if (!canEdit) {
     return (
-      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-gray-50">
-        <span className="text-sm font-bold text-gray-800">{category.name}</span>
-        <span className="text-xs text-gray-400">{category.entry_count ?? 0} items</span>
+      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-gray-50 dark:bg-gray-800/60">
+        <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
+          {category.name}
+        </span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">
+          {category.entry_count ?? 0} items
+        </span>
       </div>
     );
   }
@@ -139,12 +143,12 @@ function EditCategoryRow({ category, canEdit, onSave, onDelete, isSaving, isDele
   return (
     <form
       onSubmit={handleSubmit((values) => onSave(category.id, values))}
-      className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end p-3 rounded-xl border border-gray-100 bg-gray-50/80"
+      className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50"
     >
       <div className="sm:col-span-3">
         <input
           {...register("name")}
-          className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
+          className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg"
         />
         {errors.name && <p className="text-[10px] text-red-500">{errors.name.message}</p>}
       </div>
@@ -152,7 +156,7 @@ function EditCategoryRow({ category, canEdit, onSave, onDelete, isSaving, isDele
         <input
           {...register("description")}
           placeholder="Description"
-          className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
+          className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg"
         />
       </div>
       <div className="sm:col-span-1">
@@ -160,21 +164,23 @@ function EditCategoryRow({ category, canEdit, onSave, onDelete, isSaving, isDele
           type="number"
           min="0"
           {...register("sort_order")}
-          className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg"
+          className="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg"
         />
       </div>
       <div className="sm:col-span-2 flex items-center gap-2">
-        <label className="flex items-center gap-1 text-xs font-semibold text-gray-600">
+        <label className="flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-300">
           <input type="checkbox" {...register("is_active")} className="rounded" />
           Active
         </label>
-        <span className="text-[10px] text-gray-400">{category.entry_count ?? 0} SKUs</span>
+        <span className="text-[10px] text-gray-400 dark:text-gray-500">
+          {category.entry_count ?? 0} SKUs
+        </span>
       </div>
       <div className="sm:col-span-2 flex justify-end gap-1">
         <button
           type="submit"
           disabled={!isDirty || isSaving}
-          className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 disabled:opacity-40"
+          className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 disabled:opacity-40"
           title="Save"
         >
           {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
@@ -183,7 +189,7 @@ function EditCategoryRow({ category, canEdit, onSave, onDelete, isSaving, isDele
           type="button"
           onClick={() => onDelete(category)}
           disabled={isDeleting}
-          className="p-2 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-40"
+          className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-40"
           title="Delete"
         >
           {isDeleting ? (
@@ -271,13 +277,15 @@ export default function CategoryManager({ canEdit, onCategoriesChange }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Layers className="text-[#4c84a4]" size={20} />
+          <Layers className="text-[#4c84a4] dark:text-sky-300" size={20} />
           <div>
-            <h2 className="text-sm font-black text-gray-900">Cloth categories</h2>
-            <p className="text-xs text-gray-400">
+            <h2 className="text-sm font-black text-gray-900 dark:text-gray-100">
+              Cloth categories
+            </h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               Create, edit, and delete groupings for the price matrix
             </p>
           </div>
@@ -289,7 +297,7 @@ export default function CategoryManager({ canEdit, onCategoriesChange }) {
             className={cn(
               "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors",
               showCreate
-                ? "bg-gray-100 text-gray-700"
+                ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
                 : "bg-[#4c84a4] text-white hover:bg-[#3a6680]",
             )}
           >
@@ -300,7 +308,7 @@ export default function CategoryManager({ canEdit, onCategoriesChange }) {
       </div>
 
       {showCreate && canEdit && (
-        <div className="border border-dashed border-[#4c84a4]/30 rounded-xl p-4 bg-blue-50/30">
+        <div className="border border-dashed border-[#4c84a4]/30 rounded-xl p-4 bg-blue-50/30 dark:bg-sky-950/20">
           <CategoryForm
             defaultValues={{ sort_order: (sorted.length + 1) * 10 }}
             submitLabel="Create category"
@@ -313,7 +321,7 @@ export default function CategoryManager({ canEdit, onCategoriesChange }) {
 
       <div className="space-y-2">
         {sorted.length === 0 ? (
-          <p className="text-sm text-gray-400 italic py-4 text-center">
+          <p className="text-sm text-gray-400 dark:text-gray-500 italic py-4 text-center">
             No categories yet. Create one to organize your catalogue.
           </p>
         ) : (

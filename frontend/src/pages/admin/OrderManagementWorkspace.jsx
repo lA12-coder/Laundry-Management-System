@@ -83,16 +83,16 @@ export default function OrderManagementWorkspace() {
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Order Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
             Server-side ledger with lifecycle overrides, ghost customer support, and
             rider capacity routing.
           </p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm space-y-4">
-        <div className="flex items-center gap-2 text-gray-700">
+      <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 sm:p-5 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
           <Filter size={16} className="text-[#4c84a4]" />
           <span className="text-xs font-black uppercase tracking-wider">
             Filters
@@ -102,7 +102,7 @@ export default function OrderManagementWorkspace() {
           <div className="relative xl:col-span-2">
             <Search
               size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
             />
             <input
               type="search"
@@ -111,7 +111,7 @@ export default function OrderManagementWorkspace() {
               onChange={(e) =>
                 setDraftFilters((f) => ({ ...f, search: e.target.value }))
               }
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#4c84a4]/30 outline-none"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-[#4c84a4]/30 dark:focus:ring-sky-500/30 outline-none"
             />
           </div>
           <select
@@ -119,7 +119,7 @@ export default function OrderManagementWorkspace() {
             onChange={(e) =>
               setDraftFilters((f) => ({ ...f, status: e.target.value }))
             }
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl font-semibold text-gray-700"
+            className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl font-semibold text-gray-700 dark:text-gray-200"
           >
             <option value="">All statuses</option>
             {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
@@ -133,7 +133,7 @@ export default function OrderManagementWorkspace() {
             onChange={(e) =>
               setDraftFilters((f) => ({ ...f, urgency: e.target.value }))
             }
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl font-semibold text-gray-700"
+            className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl font-semibold text-gray-700 dark:text-gray-200"
           >
             <option value="">All urgency</option>
             <option value={OrderUrgency.REGULAR}>Regular</option>
@@ -144,7 +144,7 @@ export default function OrderManagementWorkspace() {
             onChange={(e) =>
               setDraftFilters((f) => ({ ...f, partner: e.target.value }))
             }
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl font-semibold text-gray-700"
+            className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl font-semibold text-gray-700 dark:text-gray-200"
           >
             <option value="">All partners</option>
             {(formOptions?.partners ?? []).map((p) => (
@@ -159,7 +159,7 @@ export default function OrderManagementWorkspace() {
             onChange={(e) =>
               setDraftFilters((f) => ({ ...f, date_from: e.target.value }))
             }
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl"
+            className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-xl"
             title="From date"
           />
           <input
@@ -168,7 +168,7 @@ export default function OrderManagementWorkspace() {
             onChange={(e) =>
               setDraftFilters((f) => ({ ...f, date_to: e.target.value }))
             }
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl"
+            className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-xl"
             title="To date"
           />
         </div>
@@ -183,7 +183,7 @@ export default function OrderManagementWorkspace() {
           <button
             type="button"
             onClick={resetFilters}
-            className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-50"
+            className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             Reset
           </button>
@@ -202,18 +202,18 @@ export default function OrderManagementWorkspace() {
         <div className="space-y-4">
           {selectedOrder ? (
             <>
-              <div className="rounded-2xl border border-[#4c84a4]/20 bg-blue-50/40 p-4">
+              <div className="rounded-2xl border border-[#4c84a4]/20 dark:border-sky-700/40 bg-blue-50/40 dark:bg-sky-950/20 p-4">
                 <p className="text-xs font-bold text-[#4c84a4] uppercase tracking-wider">
                   Selected order
                 </p>
-                <p className="text-lg font-black text-gray-900 mt-1">
+                <p className="text-lg font-black text-gray-900 dark:text-gray-100 mt-1">
                   #{selectedOrder.id}
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   {selectedOrder.customer_name}
                   {selectedOrder.is_ghost_customer && " (Ghost)"}
                 </p>
-                <p className="text-xs font-mono text-gray-400 mt-0.5">
+                <p className="text-xs font-mono text-gray-400 dark:text-gray-500 mt-0.5">
                   {selectedOrder.customer_phone}
                 </p>
               </div>
@@ -231,7 +231,7 @@ export default function OrderManagementWorkspace() {
           ) : (
             <>
               <SkeletonCard lines={2} />
-              <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
+              <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-8 text-center text-sm text-gray-400 dark:text-gray-500">
                 <RefreshCw size={20} className="mx-auto mb-2 opacity-40" />
                 Select an order row to open lifecycle and rider override panels.
               </div>

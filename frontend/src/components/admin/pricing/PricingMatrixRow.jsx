@@ -69,13 +69,13 @@ export default function PricingMatrixRow({
   };
 
   const inputCls =
-    "w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#4c84a4]/30 outline-none disabled:bg-gray-50 disabled:text-gray-500";
+    "w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-[#4c84a4]/30 dark:focus:ring-sky-500/30 outline-none disabled:bg-gray-50 disabled:text-gray-500 dark:disabled:bg-gray-800 dark:disabled:text-gray-400";
 
   return (
     <tr
       className={cn(
-        "border-b border-gray-50 transition-colors",
-        !entry.is_active && "opacity-60 bg-gray-50/80",
+        "border-b border-gray-50 dark:border-gray-800 transition-colors",
+        !entry.is_active && "opacity-60 bg-gray-50/80 dark:bg-gray-800/50",
       )}
     >
       <td className="px-3 py-3.5 align-middle w-[100px]">
@@ -108,7 +108,7 @@ export default function PricingMatrixRow({
         )}
       </td>
       <td className="px-3 py-3.5 align-middle">
-        <span className="text-xs font-bold text-gray-500 uppercase">
+        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">
           {CLOTH_SIZE_LABELS[entry.size] || entry.size}
         </span>
       </td>
@@ -119,7 +119,7 @@ export default function PricingMatrixRow({
           min="0.01"
           {...register("fua_price", { valueAsNumber: true })}
           disabled={!canEdit}
-          className={cn(inputCls, "font-bold text-[#4c84a4]")}
+          className={cn(inputCls, "font-bold text-[#4c84a4] dark:text-sky-300")}
         />
         {errors.fua_price && (
           <p className="text-[10px] text-red-500 mt-0.5">{errors.fua_price.message}</p>
@@ -140,7 +140,7 @@ export default function PricingMatrixRow({
           </p>
         )}
       </td>
-      <td className="px-3 py-3.5 align-middle text-xs text-gray-500 font-semibold">
+      <td className="px-3 py-3.5 align-middle text-xs text-gray-500 dark:text-gray-400 font-semibold">
         {entry.fua_price && entry.partner_price
           ? `${(
               ((Number(entry.fua_price) - Number(entry.partner_price)) /
@@ -156,7 +156,7 @@ export default function PricingMatrixRow({
               type="button"
               disabled={(!isDirty && !hasImageChange) || isSaving || Boolean(imageError)}
               onClick={handleSubmit(submit)}
-              className="p-2 rounded-lg text-[#4c84a4] hover:bg-blue-50 disabled:opacity-40"
+              className="p-2 rounded-lg text-[#4c84a4] dark:text-sky-300 hover:bg-blue-50 dark:hover:bg-sky-950/40 disabled:opacity-40"
               title="Save row"
             >
               {isSaving ? (
@@ -168,7 +168,7 @@ export default function PricingMatrixRow({
             <button
               type="button"
               onClick={() => onDeactivate(entry.id)}
-              className="p-2 rounded-lg text-red-500 hover:bg-red-50"
+              className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
               title="Deactivate"
             >
               <Trash2 size={16} />

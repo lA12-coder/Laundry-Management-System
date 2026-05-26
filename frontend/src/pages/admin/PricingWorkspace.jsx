@@ -20,6 +20,7 @@ import {
   categoryQueryKeys,
   fetchPriceCategories,
 } from "../../services/categoriesApi";
+import { adminSurface } from "../../lib/themeClasses";
 
 export default function PricingWorkspace() {
   const { hasPermission } = useAuth();
@@ -129,20 +130,20 @@ export default function PricingWorkspace() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Shirt className="text-[#4c84a4]" size={26} />
+          <h1 className={`text-2xl font-bold flex items-center gap-2 ${adminSurface.heading}`}>
+            <Shirt className="text-[#4c84a4] dark:text-sky-400" size={26} />
             Price matrix
           </h1>
-          <p className="text-gray-500 text-sm mt-1 max-w-xl">
+          <p className={`${adminSurface.subtext} text-sm mt-1 max-w-xl`}>
             Manage categories and cloth catalogue entries that flow into{" "}
-            <code className="text-xs bg-gray-100 px-1 rounded">ClothItem</code> line items.
+            <code className={adminSurface.code}>ClothItem</code> line items.
           </p>
         </div>
         {canEdit && (
           <button
             type="button"
             onClick={() => setBulkOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-[#4c84a4] text-[#4c84a4] rounded-xl text-sm font-bold hover:bg-blue-50"
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold ${adminSurface.btnOutline}`}
           >
             <Percent size={16} />
             Bulk adjustment
@@ -151,7 +152,7 @@ export default function PricingWorkspace() {
       </div>
 
       {!canEdit && (
-        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+        <p className={`${adminSurface.alertWarning} rounded-xl px-4 py-3`}>
           View-only mode — contact an administrator to edit catalogue pricing.
         </p>
       )}

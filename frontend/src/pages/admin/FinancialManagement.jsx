@@ -69,13 +69,13 @@ export default function FinancialManagement() {
     <div className="space-y-8">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Landmark className="text-[#4c84a4]" size={26} />
             Financial bookkeeping
           </h1>
-          <p className="text-gray-500 text-sm mt-1 max-w-2xl">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-2xl">
             Automated split ledger tied to{" "}
-            <code className="text-xs bg-gray-100 px-1 rounded">TransactionLog</code> — Fua
+            <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 rounded">TransactionLog</code> — Fua
             commission from catalogue markup (Fua − partner − rider). Rider fee is set under
             System settings.
           </p>
@@ -94,32 +94,32 @@ export default function FinancialManagement() {
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
+      <div className="flex flex-col md:flex-row gap-3 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900">
         <div className="relative flex-1">
           <Search
             size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
           />
           <input
             type="search"
             placeholder="Order ID or partner name…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 text-sm bg-white"
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
           />
         </div>
         <input
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
-          className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white"
+          className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
           aria-label="From date"
         />
         <input
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
-          className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white"
+          className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
           aria-label="To date"
         />
       </div>

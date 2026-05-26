@@ -48,14 +48,14 @@ export default function CatalogImageUpload({
   return (
     <div className={cn("flex flex-col gap-1.5", compact ? "items-center" : "")}>
       {!compact && (
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
           Cloth image
         </span>
       )}
       <div className={cn("flex items-center gap-3", compact && "flex-col")}>
         <div
           className={cn(
-            "rounded-xl border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0",
+            "rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0",
             boxCls,
           )}
         >
@@ -66,7 +66,7 @@ export default function CatalogImageUpload({
               className="h-full w-full object-cover"
             />
           ) : (
-            <Shirt className="text-gray-300" size={compact ? 22 : 32} />
+            <Shirt className="text-gray-300 dark:text-gray-600" size={compact ? 22 : 32} />
           )}
         </div>
 

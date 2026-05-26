@@ -61,29 +61,29 @@ export default function RiderAssignmentPanel({
   if (isLoading) return <SkeletonCard lines={4} />;
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
+    <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm space-y-4">
       <div className="flex items-center gap-2">
-        <Bike size={18} className="text-[#4c84a4]" />
-        <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+        <Bike size={18} className="text-[#4c84a4] dark:text-sky-300" />
+        <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 uppercase tracking-wider">
           Rider assignment
         </h3>
       </div>
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-500 dark:text-gray-400">
         Current:{" "}
-        <span className="font-bold text-gray-800">
+        <span className="font-bold text-gray-800 dark:text-gray-200">
           {order.rider_name || "Unassigned"}
         </span>
       </p>
 
       <div className="space-y-2">
-        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
           Select rider (by capacity)
         </label>
         <select
           value={selectedRider}
           onChange={(e) => setSelectedRider(e.target.value)}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-[#4c84a4]/30 outline-none"
+          className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 rounded-xl text-sm font-semibold text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-[#4c84a4]/30 dark:focus:ring-sky-500/30 outline-none"
         >
           <option value="">— Choose rider —</option>
           {riders.map((rider) => (
@@ -106,17 +106,17 @@ export default function RiderAssignmentPanel({
                 className={cn(
                   "rounded-lg px-3 py-2 text-xs border",
                   isSelected
-                    ? "border-[#4c84a4]/40 bg-blue-50/80"
-                    : "border-gray-50 bg-gray-50/50",
+                    ? "border-[#4c84a4]/40 bg-blue-50/80 dark:bg-sky-950/40"
+                    : "border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50",
                 )}
               >
-                <div className="flex justify-between font-semibold text-gray-800 mb-1">
+                <div className="flex justify-between font-semibold text-gray-800 dark:text-gray-200 mb-1">
                   <span>{rider.full_name || rider.email}</span>
-                  <span className="text-[#4c84a4]">{load} active</span>
+                  <span className="text-[#4c84a4] dark:text-sky-300">{load} active</span>
                 </div>
-                <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#4c84a4] rounded-full transition-all"
+                    className="h-full bg-[#4c84a4] dark:bg-sky-400 rounded-full transition-all"
                     style={{ width: `${pct}%` }}
                   />
                 </div>

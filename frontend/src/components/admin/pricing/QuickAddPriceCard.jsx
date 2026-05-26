@@ -75,12 +75,12 @@ export default function QuickAddPriceCard({ canEdit, categories, onCreate, isPen
   };
 
   const fieldCls =
-    "w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#4c84a4]/30 outline-none";
+    "w-full px-3 py-2 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-[#4c84a4]/30 dark:focus:ring-sky-500/30 outline-none";
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-      <h3 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2">
-        <Plus size={18} className="text-[#4c84a4]" />
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+      <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+        <Plus size={18} className="text-[#4c84a4] dark:text-sky-300" />
         Quick-add catalogue item
       </h3>
       <form onSubmit={handleSubmit(submit)} className="space-y-4">
@@ -98,7 +98,7 @@ export default function QuickAddPriceCard({ canEdit, categories, onCreate, isPen
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
         <div className="lg:col-span-2">
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Cloth name
           </label>
           <input {...register("cloth_name")} className={fieldCls} placeholder="e.g. Dress shirt" />
@@ -107,7 +107,7 @@ export default function QuickAddPriceCard({ canEdit, categories, onCreate, isPen
           )}
         </div>
         <div>
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Category
           </label>
           <select {...register("category")} className={fieldCls}>
@@ -122,7 +122,7 @@ export default function QuickAddPriceCard({ canEdit, categories, onCreate, isPen
           )}
         </div>
         <div>
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Size
           </label>
           <select {...register("size")} className={fieldCls}>
@@ -134,7 +134,7 @@ export default function QuickAddPriceCard({ canEdit, categories, onCreate, isPen
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Fua Price ETB
           </label>
           <input type="number" step="0.01" {...register("fua_price")} className={fieldCls} />
@@ -143,7 +143,7 @@ export default function QuickAddPriceCard({ canEdit, categories, onCreate, isPen
           )}
         </div>
         <div>
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             Partner ETB
           </label>
           <input

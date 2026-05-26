@@ -47,7 +47,7 @@ export default function PricingMatrix({
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
         <OrderTableSkeleton rows={10} columns={7} />
       </div>
     );
@@ -55,7 +55,7 @@ export default function PricingMatrix({
 
   if (sortedCategories.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-gray-200 p-10 text-center text-sm text-gray-400">
+      <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-10 text-center text-sm text-gray-400 dark:text-gray-500">
         Create at least one category above to organize catalogue items.
       </div>
     );
@@ -81,7 +81,7 @@ export default function PricingMatrix({
         return (
           <section
             key={category.id}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden"
           >
             <button
               type="button"
@@ -91,23 +91,27 @@ export default function PricingMatrix({
                   [category.id]: !isOpen ? true : false,
                 }))
               }
-              className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-100 hover:bg-gray-50/80 transition-colors"
+              className="w-full flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-[#4c84a4]/10 flex items-center justify-center">
-                  <Layers size={18} className="text-[#4c84a4]" />
+                  <Layers size={18} className="text-[#4c84a4] dark:text-sky-300" />
                 </div>
                 <div className="text-left">
-                  <h2 className="text-sm font-black text-gray-900">{category.name}</h2>
-                  <p className="text-xs text-gray-400">
+                  <h2 className="text-sm font-black text-gray-900 dark:text-gray-100">
+                    {category.name}
+                  </h2>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
                     {rows.length} SKU{rows.length !== 1 ? "s" : ""}
                     {category.slug && (
-                      <span className="ml-2 font-mono text-gray-300">{category.slug}</span>
+                      <span className="ml-2 font-mono text-gray-300 dark:text-gray-600">
+                        {category.slug}
+                      </span>
                     )}
                   </p>
                 </div>
               </div>
-              <span className="text-xs font-bold text-gray-400">
+              <span className="text-xs font-bold text-gray-400 dark:text-gray-500">
                 {isOpen ? "Collapse" : "Expand"}
               </span>
             </button>
@@ -130,7 +134,7 @@ export default function PricingMatrix({
                     <TableRow>
                       <TableCell
                         colSpan={7}
-                        className="text-center text-sm text-gray-400 italic py-8"
+                        className="text-center text-sm text-gray-400 dark:text-gray-500 italic py-8"
                       >
                         No items in this category yet.
                       </TableCell>

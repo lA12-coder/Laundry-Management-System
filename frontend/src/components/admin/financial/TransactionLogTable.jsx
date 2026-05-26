@@ -70,7 +70,7 @@ export default function TransactionLogTable({ filterParams = {} }) {
         header: "Order ID",
         accessorKey: "order_id",
         cell: ({ getValue }) => (
-          <span className="font-mono text-sm font-medium text-gray-900">
+          <span className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
             #{getValue()}
           </span>
         ),
@@ -88,7 +88,7 @@ export default function TransactionLogTable({ filterParams = {} }) {
         header: "Fua commission",
         accessorKey: "fualaundry_commission",
         cell: ({ getValue }) => (
-          <span className="tabular-nums text-sm text-[#4c84a4]">
+          <span className="tabular-nums text-sm text-[#4c84a4] dark:text-sky-300">
             {formatMoneyETB(getValue())}
           </span>
         ),
@@ -98,7 +98,7 @@ export default function TransactionLogTable({ filterParams = {} }) {
         header: "Operator fee",
         accessorKey: "rider_fee",
         cell: ({ getValue }) => (
-          <span className="tabular-nums text-sm text-amber-700">
+          <span className="tabular-nums text-sm text-amber-700 dark:text-amber-300">
             {formatMoneyETB(getValue())}
           </span>
         ),
@@ -108,7 +108,7 @@ export default function TransactionLogTable({ filterParams = {} }) {
         header: "Net laundromat payout",
         accessorKey: "partner_earning",
         cell: ({ getValue }) => (
-          <span className="tabular-nums text-sm font-medium text-gray-900">
+          <span className="tabular-nums text-sm font-medium text-gray-900 dark:text-gray-100">
             {formatMoneyETB(getValue())}
           </span>
         ),
@@ -118,7 +118,7 @@ export default function TransactionLogTable({ filterParams = {} }) {
         header: "Processing datetime",
         accessorKey: "created_at",
         cell: ({ getValue }) => (
-          <span className="text-sm text-gray-600">{formatProcessedAt(getValue())}</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">{formatProcessedAt(getValue())}</span>
         ),
       },
     ],
@@ -139,15 +139,15 @@ export default function TransactionLogTable({ filterParams = {} }) {
   const canPrev = pagination.pageIndex > 0;
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Transaction audit ledger</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Transaction audit ledger</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Automated splits recorded when orders enter washing or delivery
           </p>
         </div>
-        <p className="text-sm text-gray-600 tabular-nums">
+        <p className="text-sm text-gray-600 dark:text-gray-300 tabular-nums">
           {totalCount.toLocaleString()} record{totalCount !== 1 ? "s" : ""}
           {isFetching && !isLoading && (
             <span className="ml-2 text-[#4c84a4]">Refreshing…</span>
@@ -156,7 +156,7 @@ export default function TransactionLogTable({ filterParams = {} }) {
       </div>
 
       {isError && (
-        <p className="text-sm text-red-600 px-5 py-4">
+        <p className="text-sm text-red-600 dark:text-red-400 px-5 py-4">
           {error?.message || "Failed to load transaction logs."}
         </p>
       )}
@@ -165,7 +165,7 @@ export default function TransactionLogTable({ filterParams = {} }) {
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id} className="bg-gray-50/80 hover:bg-gray-50/80">
+              <TableRow key={hg.id} className="bg-gray-50/80 dark:bg-gray-800/80 hover:bg-gray-50/80 dark:hover:bg-gray-800/80">
                 {hg.headers.map((header) => (
                   <TableHead key={header.id} className="text-xs font-semibold uppercase">
                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -179,13 +179,13 @@ export default function TransactionLogTable({ filterParams = {} }) {
               <OrderTableSkeleton rows={8} columns={COLUMNS} />
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={COLUMNS} className="text-center py-12 text-gray-500">
+                <TableCell colSpan={COLUMNS} className="text-center py-12 text-gray-500 dark:text-gray-400">
                   No transaction logs yet. Settlements appear when orders reach washing.
                 </TableCell>
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="border-b border-gray-50">
+                <TableRow key={row.id} className="border-b border-gray-50 dark:border-gray-800">
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="py-3.5">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -198,7 +198,7 @@ export default function TransactionLogTable({ filterParams = {} }) {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between px-5 py-3 border-t border-gray-50 text-sm">
+      <div className="flex items-center justify-between px-5 py-3 border-t border-gray-50 dark:border-gray-800 text-sm">
         <button
           type="button"
           disabled={!canPrev}
@@ -206,14 +206,14 @@ export default function TransactionLogTable({ filterParams = {} }) {
           className={cn(
             "inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border",
             canPrev
-              ? "border-gray-200 hover:bg-gray-50"
-              : "border-gray-100 text-gray-300 cursor-not-allowed",
+              ? "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+              : "border-gray-100 dark:border-gray-800 text-gray-300 dark:text-gray-600 cursor-not-allowed",
           )}
         >
           <ChevronLeft size={16} />
           Previous
         </button>
-        <span className="text-gray-600 tabular-nums">
+        <span className="text-gray-600 dark:text-gray-300 tabular-nums">
           Page {pagination.pageIndex + 1} of {pageCount}
         </span>
         <button
@@ -223,8 +223,8 @@ export default function TransactionLogTable({ filterParams = {} }) {
           className={cn(
             "inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border",
             canNext
-              ? "border-gray-200 hover:bg-gray-50"
-              : "border-gray-100 text-gray-300 cursor-not-allowed",
+              ? "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+              : "border-gray-100 dark:border-gray-800 text-gray-300 dark:text-gray-600 cursor-not-allowed",
           )}
         >
           Next

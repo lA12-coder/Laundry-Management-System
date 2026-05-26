@@ -42,7 +42,7 @@ function SortIcon({ column }) {
   const sorted = column.getIsSorted();
   if (sorted === "asc") return <ChevronUp size={14} className="text-[#4c84a4]" />;
   if (sorted === "desc") return <ChevronDown size={14} className="text-[#4c84a4]" />;
-  return <ChevronsUpDown size={14} className="text-gray-300" />;
+  return <ChevronsUpDown size={14} className="text-gray-300 dark:text-gray-600" />;
 }
 
 /**
@@ -98,7 +98,7 @@ export default function OrderTable({
               e.stopPropagation();
               row.toggleExpanded();
             }}
-            className="p-1.5 text-gray-400 hover:text-[#4c84a4] hover:bg-blue-50 rounded-lg"
+            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-[#4c84a4] dark:hover:text-sky-300 hover:bg-blue-50 dark:hover:bg-sky-950/40 rounded-lg"
           >
             {row.getIsExpanded() ? (
               <ChevronDown size={16} />
@@ -113,7 +113,7 @@ export default function OrderTable({
         header: "Order",
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span className="font-black text-gray-900">#{row.original.id}</span>
+            <span className="font-black text-gray-900 dark:text-gray-100">#{row.original.id}</span>
             {row.original.urgency === "urgent" && (
               <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full uppercase">
                 Urgent
@@ -131,7 +131,7 @@ export default function OrderTable({
           return (
             <div>
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {o.customer_name || "Guest"}
                 </p>
                 {o.is_ghost_customer && (
@@ -144,10 +144,10 @@ export default function OrderTable({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-400 font-mono">
+              <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">
                 {o.customer_phone || "—"}
               </p>
-              <p className="text-xs text-gray-400 truncate max-w-[180px]">
+              <p className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[180px]">
                 {o.delivery_address}
               </p>
             </div>
@@ -159,9 +159,9 @@ export default function OrderTable({
         header: "Partner",
         enableSorting: false,
         cell: ({ getValue }) => (
-          <span className="text-sm text-gray-600 font-medium">
+          <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">
             {getValue() || (
-              <span className="text-gray-300 italic">Unassigned</span>
+              <span className="text-gray-300 dark:text-gray-600 italic">Unassigned</span>
             )}
           </span>
         ),
@@ -171,8 +171,8 @@ export default function OrderTable({
         header: "Rider",
         enableSorting: false,
         cell: ({ getValue }) => (
-          <span className="text-sm text-gray-600">
-            {getValue() || <span className="text-gray-300 italic">None</span>}
+          <span className="text-sm text-gray-600 dark:text-gray-300">
+            {getValue() || <span className="text-gray-300 dark:text-gray-600 italic">None</span>}
           </span>
         ),
       },
@@ -180,7 +180,7 @@ export default function OrderTable({
         accessorKey: "total_amount",
         header: "Amount",
         cell: ({ getValue }) => (
-          <span className="font-bold text-[#4c84a4]">
+          <span className="font-bold text-[#4c84a4] dark:text-sky-300">
             ETB {parseFloat(getValue() || 0).toLocaleString()}
           </span>
         ),
@@ -194,7 +194,7 @@ export default function OrderTable({
             <span
               className={cn(
                 "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                ORDER_STATUS_STYLES[s] || "bg-gray-100 text-gray-700",
+                ORDER_STATUS_STYLES[s] || "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200",
               )}
             >
               {formatOrderStatus(s)}
@@ -206,7 +206,7 @@ export default function OrderTable({
         accessorKey: "created_at",
         header: "Created",
         cell: ({ getValue }) => (
-          <span className="text-xs text-gray-500 font-medium">
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
             {getValue()
               ? new Date(getValue()).toLocaleString(undefined, {
                   dateStyle: "short",
@@ -241,7 +241,7 @@ export default function OrderTable({
   });
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -252,7 +252,7 @@ export default function OrderTable({
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (
                       <button
                         type="button"
-                        className="flex items-center gap-1.5 hover:text-gray-800 transition-colors"
+                        className="flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-100 transition-colors"
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(
@@ -281,7 +281,7 @@ export default function OrderTable({
                   <p className="text-red-600 font-semibold text-sm">
                     Failed to load orders.
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                     {error?.message || "Check API connection and permissions."}
                   </p>
                 </TableCell>
@@ -295,7 +295,7 @@ export default function OrderTable({
                     }
                     className={cn(
                       "cursor-pointer",
-                      selectedOrderId === row.original.id && "bg-blue-50/70",
+                      selectedOrderId === row.original.id && "bg-blue-50/70 dark:bg-sky-950/40",
                       isFetching && "opacity-80",
                     )}
                     onClick={() => onSelectOrder?.(row.original)}
@@ -322,7 +322,7 @@ export default function OrderTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-32 text-center text-gray-500 italic"
+                  className="h-32 text-center text-gray-500 dark:text-gray-400 italic"
                 >
                   No orders match the current filters.
                 </TableCell>
@@ -332,8 +332,8 @@ export default function OrderTable({
         </Table>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50/50">
-        <p className="text-xs text-gray-500 font-semibold">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900">
+        <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
           {totalCount.toLocaleString()} order{totalCount !== 1 ? "s" : ""}
           {isFetching && !isLoading && (
             <span className="ml-2 text-[#4c84a4]">Refreshing…</span>
@@ -344,18 +344,18 @@ export default function OrderTable({
             type="button"
             disabled={!table.getCanPreviousPage()}
             onClick={() => table.previousPage()}
-            className="p-2 rounded-lg border border-gray-200 bg-white disabled:opacity-40 hover:bg-gray-50"
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
           >
             <ChevronLeft size={16} />
           </button>
-          <span className="text-xs font-bold text-gray-700 min-w-[100px] text-center">
+          <span className="text-xs font-bold text-gray-700 dark:text-gray-200 min-w-[100px] text-center">
             Page {pagination.pageIndex + 1} of {pageCount}
           </span>
           <button
             type="button"
             disabled={!table.getCanNextPage()}
             onClick={() => table.nextPage()}
-            className="p-2 rounded-lg border border-gray-200 bg-white disabled:opacity-40 hover:bg-gray-50"
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
           >
             <ChevronRight size={16} />
           </button>

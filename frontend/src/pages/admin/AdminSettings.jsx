@@ -122,24 +122,24 @@ export default function AdminSettings() {
         onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
         className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 dark:bg-zinc-800 dark:border-zinc-700"
       >
-        <div className="flex items-center gap-3 pb-2 border-b border-gray-50">
-          <div className="p-2 rounded-xl bg-amber-50">
+        <div className="flex items-center gap-3 pb-2 border-b border-gray-50 dark:border-gray-800">
+          <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40">
             <Truck size={20} className="text-amber-600" />
           </div>
           <div>
-            <h2 className="text-sm font-black text-gray-900">Rider / logistics fee</h2>
-            <p className="text-xs text-gray-500">
+            <h2 className="text-sm font-black text-gray-900 dark:text-gray-100">Rider / logistics fee</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Deducted from each order before Fua commission and partner payout.
             </p>
           </div>
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-gray-400 animate-pulse">Loading configuration…</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">Loading configuration…</p>
         ) : (
           <>
             <fieldset className="space-y-3">
-              <legend className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              <legend className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                 Fee type
               </legend>
               <label className="flex items-center gap-3 cursor-pointer">
@@ -149,9 +149,9 @@ export default function AdminSettings() {
                   {...register("rider_fee_mode")}
                   className="text-[#4c84a4]"
                 />
-                <span className="text-sm text-gray-800">
+                <span className="text-sm text-gray-800 dark:text-gray-200">
                   Percentage of order total{" "}
-                  <span className="text-gray-400">(default 10%)</span>
+                  <span className="text-gray-400 dark:text-gray-500">(default 10%)</span>
                 </span>
               </label>
               <label className="flex items-center gap-3 cursor-pointer">
@@ -161,13 +161,13 @@ export default function AdminSettings() {
                   {...register("rider_fee_mode")}
                   className="text-[#4c84a4]"
                 />
-                <span className="text-sm text-gray-800">Fixed amount per order (ETB)</span>
+                <span className="text-sm text-gray-800 dark:text-gray-200">Fixed amount per order (ETB)</span>
               </label>
             </fieldset>
 
             {mode === "percent" ? (
               <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   Commission rate (%)
                 </label>
                 <input
@@ -186,7 +186,7 @@ export default function AdminSettings() {
               </div>
             ) : (
               <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   Fixed fee (ETB)
                 </label>
                 <input
@@ -204,7 +204,7 @@ export default function AdminSettings() {
               </div>
             )}
 
-            <p className="text-xs text-gray-500 bg-gray-50 rounded-xl px-4 py-3">
+            <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 rounded-xl px-4 py-3">
               Fua commission = order total − partner total − rider fee. Existing settled
               logs keep the fee recorded at settlement time.
             </p>
