@@ -73,35 +73,44 @@ def build_cloth_items(order, items_data, price_map):
     ClothItem.objects.bulk_create(cloth_items)
 
 
-def assign_least_loaded_rider(available_riders_qs):
+def assign_least_loaded_rider(available_riders_qs, *, prefer_urgent=False):
     """
     Finds the active rider with the fewest non-delivered orders (load balancing).
+    When prefer_urgent is True, riders with fewer active urgent assignments are favored.
     """
     if not available_riders_qs.exists():
         return None
 
-    return available_riders_qs.annotate(
+    queryset = available_riders_qs.annotate(
         active_order_count=Count(
-            'rider_orders',
-            filter=~Q(rider_orders__status=Order.Status.DELIVERED)
+            "rider_orders",
+            filter=~Q(rider_orders__status=Order.Status.DELIVERED),
         )
-    ).order_by('active_order_count').first()
+    )
+    if prefer_urgent:
+        queryset = queryset.annotate(
+            urgent_order_count=Count(
+                "rider_orders",
+                filter=Q(rider_orders__urgency=Order.Urgency.URGENT)
+                & ~Q(rider_orders__status=Order.Status.DELIVERED),
+            )
+        ).order_by("urgent_order_count", "active_order_count")
+    else:
+        queryset = queryset.order_by("active_order_count")
+    return queryset.first()
 
 
 def create_order_transaction_record(order):
     """
     Calculates revenue split and persists a TransactionLog for the given order.
-    Split: FuaLaundry keeps total_amount; partner earns the base_price.
-    Commission = total_amount - base_price (the markup).
     Called by the post_save signal when status → WASHING or DELIVERED.
     """
-    partner_earning = order.base_price
-    fualaundry_commission = order.total_amount - order.base_price
-    partner_earning = max(partner_earning, Decimal('0.00'))
-    fualaundry_commission = max(fualaundry_commission, Decimal('0.00'))
+    from .ledger import compute_transaction_split
 
+    split = compute_transaction_split(order.total_amount, order.base_price)
     return TransactionLog.objects.create(
         order=order,
-        partner_earning=partner_earning,
-        fualaundry_commission=fualaundry_commission,
+        partner_earning=split["partner_earning"],
+        fualaundry_commission=split["fualaundry_commission"],
+        rider_fee=split["rider_fee"],
     )

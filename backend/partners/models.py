@@ -9,6 +9,7 @@ class LaundryPartner(models.Model):
         related_name="partner_profile",
     )
     business_name = models.CharField(max_length=255)
+    hub_address = models.CharField(max_length=255, blank=True, default="")
     is_approved = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     capacity_per_day = models.PositiveIntegerField(default=0)

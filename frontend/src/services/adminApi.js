@@ -48,12 +48,12 @@ export const reassignRider = async (orderId, riderId) => {
 
 export const fetchFormOptions = async () => {
   const { data } = await api.get('/admin/orders/form-options/');
-  return data;
+  return data?.data ?? data;
 };
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
-export const fetchDashboardMetrics = async () => {
-  const { data } = await api.get('/admin/dashboard-metrics/');
+export const fetchDashboardMetrics = async (period = '7d') => {
+  const { data } = await api.get('/admin/dashboard-metrics/', { params: { period } });
   return data;
 };
 

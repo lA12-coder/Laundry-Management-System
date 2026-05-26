@@ -16,6 +16,11 @@ import LaundryLoader from "../components/common/LaundryLoader";
 import api from "../API/axios";
 import { toast } from "react-hot-toast";
 import { clearCart } from "../redux/cartSlice";
+import { loginSuccess } from "../redux/userSlice";
+import {
+  normalizePhoneInput,
+  startGhostSession,
+} from "../services/ghostAccountApi";
 import { formatETB } from "../lib/currency";
 
 const CheckoutPage = () => {
@@ -42,11 +47,7 @@ const CheckoutPage = () => {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      const normalizedPhone = data.phone.startsWith("+")
-        ? data.phone
-        : data.phone.startsWith("0")
-          ? `+251${data.phone.slice(1)}`
-          : `+251${data.phone}`;
+      const normalizedPhone = normalizePhoneInput(data.phone);
       const delivery_address = `${data.city}, ${data.subcity}, ${data.kebele}`.trim();
       const payload = {
         customer: user?.id,
@@ -61,6 +62,18 @@ const CheckoutPage = () => {
       };
       await api.post("/orders/", payload);
       dispatch(clearCart());
+      try {
+        const session = await startGhostSession(normalizedPhone);
+        dispatch(
+          loginSuccess({
+            user: session.user,
+            token: session.access,
+            refreshToken: session.refresh,
+          }),
+        );
+      } catch {
+        // Rider or staff may place orders; ghost session only applies to guest profiles.
+      }
       toast.success("Order placed successfully.");
       setLoading(false);
       navigate("/dashboard");

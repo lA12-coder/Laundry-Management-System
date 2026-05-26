@@ -31,5 +31,6 @@ def api_root(request, format=None):
             "price_list": reverse("admin-pricelist-list", request=request, format=format),
             "products": reverse("admin-products-list", request=request, format=format),
             "partners": reverse("admin-partners-list", request=request, format=format),
+            "system_config": reverse("admin-system-config", request=request, format=format),
         },
     })

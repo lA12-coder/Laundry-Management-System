@@ -4,10 +4,10 @@ import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 const ToastContext = createContext(null);
 
 const TOAST_ICONS = {
-  success: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50 border-emerald-200' },
-  error:   { icon: XCircle,      color: 'text-red-500',     bg: 'bg-red-50 border-red-200'         },
-  warning: { icon: AlertTriangle, color: 'text-amber-500',  bg: 'bg-amber-50 border-amber-200'     },
-  info:    { icon: Info,          color: 'text-blue-500',   bg: 'bg-blue-50 border-blue-200'       },
+  success: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/50 dark:border-emerald-800' },
+  error:   { icon: XCircle,      color: 'text-red-500',     bg: 'bg-red-50 border-red-200 dark:bg-red-950/50 dark:border-red-800' },
+  warning: { icon: AlertTriangle, color: 'text-amber-500',  bg: 'bg-amber-50 border-amber-200 dark:bg-amber-950/50 dark:border-amber-800' },
+  info:    { icon: Info,          color: 'text-cyan-500',   bg: 'bg-cyan-50 border-cyan-200 dark:bg-cyan-950/50 dark:border-cyan-800' },
 };
 
 function Toast({ id, type = 'info', title, message, onDismiss }) {
@@ -20,8 +20,8 @@ function Toast({ id, type = 'info', title, message, onDismiss }) {
     >
       <Icon size={20} className={`flex-shrink-0 mt-0.5 ${color}`} />
       <div className="flex-1 min-w-0">
-        {title && <p className="text-sm font-bold text-gray-900">{title}</p>}
-        {message && <p className="text-sm text-gray-600 mt-0.5">{message}</p>}
+        {title && <p className="text-sm font-bold text-slate-950 dark:text-slate-100">{title}</p>}
+        {message && <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">{message}</p>}
       </div>
       <button
         onClick={() => onDismiss(id)}

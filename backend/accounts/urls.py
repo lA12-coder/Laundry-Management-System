@@ -1,6 +1,10 @@
 from django.urls import path
 from .views import (
     ChangePasswordView,
+    ClaimAccountView,
+    CustomerNotificationListView,
+    CustomerNotificationReadView,
+    GhostSessionView,
     LoginView,
     LogoutView,
     MeView,
@@ -25,4 +29,12 @@ urlpatterns = [
     path("security-settings/", SecuritySettingsView.as_view(), name="security_settings"),
     path('verify-email/<str:uidb64>/<str:token>/', VerifyEmailView.as_view(), name='verify_email'),
     path('resend-verification-email/', ResendVerificationEmailView.as_view(), name='resend_verification_email'),
+    path("ghost-session/", GhostSessionView.as_view(), name="ghost_session"),
+    path("claim-account/", ClaimAccountView.as_view(), name="claim_account"),
+    path("notifications/", CustomerNotificationListView.as_view(), name="customer_notifications"),
+    path(
+        "notifications/mark-read/",
+        CustomerNotificationReadView.as_view(),
+        name="customer_notifications_mark_read",
+    ),
 ]

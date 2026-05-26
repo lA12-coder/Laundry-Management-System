@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
@@ -13,9 +15,11 @@ urlpatterns = [
         path("", include("orders.urls")),
         path("", include("products.urls")),
         path("", include("partners.urls")),
+        path("rider/", include("orders.rider_urls")),
 
         # Admin-only Endpoints
         path("admin/", include([
+            path("", include("core.admin_urls")),
             path("", include("orders.admin_urls")),
             path("", include("partners.admin_urls")),
             path("", include("products.admin_urls")),
@@ -23,3 +27,6 @@ urlpatterns = [
         ])),
     ])),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

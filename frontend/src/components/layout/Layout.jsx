@@ -6,14 +6,14 @@ import React from 'react'
 
 const Layout = () => {
   return (
-    <div>
+    <div className="min-h-screen">
       <Header />
       <main>
         <Outlet />
       </main>
       <Footer />
     </div>
-  )
-}
+  );
+};
 
 export default Layout

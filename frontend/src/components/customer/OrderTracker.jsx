@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { notificationQueryKeys } from '../../services/notificationApi';
 import { Package, Clock, Truck, CheckCircle, BellRing, Settings, Loader2, ArrowRight } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
@@ -17,7 +18,7 @@ const STATUS_STEPS = [
   { id: 'delivered',        label: 'Delivered',    icon: CheckCircle },
 ];
 
-function GhostBanner() {
+function GhostBanner({ phoneNumber }) {
   return (
     <div className="bg-gradient-to-r from-blue-600 to-[#4c84a4] rounded-2xl p-5 sm:p-6 mb-8 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4">
       <div>
@@ -28,11 +29,11 @@ function GhostBanner() {
           You are currently viewing a guest session. Set a password and verify your phone number to save your order history and manage your preferences.
         </p>
       </div>
-      <Link 
-        to="/profile" 
+      <Link
+        to={`/claim-account${phoneNumber ? `?phone=${encodeURIComponent(phoneNumber)}` : ""}`}
         className="px-5 py-2.5 bg-white text-blue-600 hover:bg-gray-50 rounded-xl text-sm font-bold shadow-sm whitespace-nowrap transition-colors"
       >
-        Complete Profile
+        Claim account
       </Link>
     </div>
   );
@@ -105,6 +106,7 @@ function OrderStepper({ status }) {
 export default function OrderTracker() {
   const { user } = useSelector(state => state.auth);
   const addNotification = useNotificationStore(state => state.addNotification);
+  const queryClient = useQueryClient();
   
   // Track previous statuses for toast notifications
   const [prevStatuses, setPrevStatuses] = useState({});
@@ -145,13 +147,14 @@ export default function OrderTracker() {
           type: 'status_change',
           orderId: order.id
         });
+        queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all });
       }
     });
 
     if (changesDetected || Object.keys(prevStatuses).length === 0) {
       setPrevStatuses(newStatuses);
     }
-  }, [orders, prevStatuses, addNotification]);
+  }, [orders, prevStatuses, addNotification, queryClient]);
 
   const activeOrders = orders.filter(o => !['delivered', 'cancelled'].includes(o.status));
   const pastOrders = orders.filter(o => ['delivered', 'cancelled'].includes(o.status));
@@ -168,7 +171,9 @@ export default function OrderTracker() {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
       {/* Ghost User Banner */}
-      {user && !user.is_active && <GhostBanner />}
+      {user && !user.is_active && (
+        <GhostBanner phoneNumber={user.phone_number} />
+      )}
 
       <div className="flex justify-between items-end mb-6">
         <div>

@@ -1,212 +1,131 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Download, Search, TrendingUp, Wallet, Receipt, Percent } from 'lucide-react';
+import { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Download, Landmark, Search } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import { Permission } from "../../lib/rbac";
+import { useToast } from "../../components/admin/ToastContainer";
+import LedgerSummary from "../../components/admin/financial/LedgerSummary";
+import TransactionLogTable from "../../components/admin/financial/TransactionLogTable";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
-import { DataTable } from '../../components/admin/DataTable';
-import { TableSkeleton, CardSkeleton } from '../../components/admin/Skeletons';
-import { fetchAdminFinancials } from '../../services/adminApi';
+  buildTransactionLogCsv,
+  downloadCsvFile,
+} from "../../lib/ledgerExport";
+import { fetchTransactionLogsPage } from "../../services/financialApi";
 
-const TIME_FILTERS = ['1D', '7D', '1M', '1Y'];
+async function fetchAllTransactionLogs(filterParams) {
+  const collected = [];
+  let page = 1;
+  let hasMore = true;
 
-function SummaryCard({ icon: Icon, label, value, color }) {
-  return (
-    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-        <Icon size={22} className="text-white" />
-      </div>
-      <div>
-        <p className="text-xs font-medium text-gray-500">{label}</p>
-        <p className="text-xl font-black text-gray-900">{value}</p>
-      </div>
-    </div>
-  );
+  while (hasMore) {
+    const batch = await fetchTransactionLogsPage({
+      ...filterParams,
+      page,
+      page_size: 100,
+      ordering: "-created_at",
+    });
+    collected.push(...(batch.results ?? []));
+    hasMore = Boolean(batch.next);
+    page += 1;
+  }
+  return collected;
 }
 
 export default function FinancialManagement() {
-  const [search, setSearch] = useState('');
-  const [timeFilter, setTimeFilter] = useState('7D');
+  const { hasPermission } = useAuth();
+  const toast = useToast();
+  const canExport = hasPermission(Permission.VIEW_FINANCIALS);
 
-  const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['adminFinancials'],
-    queryFn: fetchAdminFinancials,
-    staleTime: 60_000,
-  });
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-  // Aggregates
-  const totalRevenue     = transactions.reduce((s, t) => s + parseFloat(t.order?.total_amount || 0), 0);
-  const partnerEarnings  = transactions.reduce((s, t) => s + parseFloat(t.partner_earning || 0), 0);
-  const commission       = transactions.reduce((s, t) => s + parseFloat(t.fualaundry_commission || 0), 0);
-  const riderFees        = Math.max(0, totalRevenue - partnerEarnings - commission);
+  const filterParams = useMemo(() => {
+    const params = {};
+    if (search.trim()) params.search = search.trim();
+    if (dateFrom) params.date_from = dateFrom;
+    if (dateTo) params.date_to = dateTo;
+    return params;
+  }, [search, dateFrom, dateTo]);
 
-  // Build chart data from transactions grouped by date
-  const chartData = (() => {
-    const days = timeFilter === '1D' ? 1 : timeFilter === '7D' ? 7 : timeFilter === '1M' ? 30 : 365;
-    const buckets = {};
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      const k = days <= 7
-        ? d.toLocaleDateString([], { weekday: 'short' })
-        : days <= 30
-        ? d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-        : d.toLocaleDateString([], { month: 'short' });
-      if (!buckets[k]) buckets[k] = { name: k, revenue: 0, commission: 0 };
-    }
-    transactions.forEach(t => {
-      const d = new Date(t.created_at);
-      const k = days <= 7
-        ? d.toLocaleDateString([], { weekday: 'short' })
-        : days <= 30
-        ? d.toLocaleDateString([], { month: 'short', day: 'numeric' })
-        : d.toLocaleDateString([], { month: 'short' });
-      if (buckets[k]) {
-        buckets[k].revenue += parseFloat(t.partner_earning || 0) + parseFloat(t.fualaundry_commission || 0);
-        buckets[k].commission += parseFloat(t.fualaundry_commission || 0);
+  const exportMutation = useMutation({
+    mutationFn: () => fetchAllTransactionLogs(filterParams),
+    onSuccess: (rows) => {
+      if (!rows.length) {
+        toast.info("No transactions to export for the current filters.");
+        return;
       }
-    });
-    return Object.values(buckets);
-  })();
-
-  const filtered = transactions.filter(t => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      String(t.order_id).includes(s) ||
-      (t.partner_name || '').toLowerCase().includes(s)
-    );
+      const csv = buildTransactionLogCsv(rows);
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadCsvFile(csv, `fua-transaction-ledger-${stamp}.csv`);
+      toast.success(`Exported ${rows.length} ledger row(s).`);
+    },
+    onError: () => {
+      toast.error("Export failed. Please try again.");
+    },
   });
-
-  const columns = [
-    {
-      header: 'TXN ID',
-      accessorKey: 'id',
-      cell: ({ getValue }) => (
-        <span className="font-mono text-xs text-gray-500">
-          #TXN-{String(getValue()).padStart(5, '0')}
-        </span>
-      ),
-    },
-    {
-      header: 'Order',
-      cell: ({ row }) => (
-        <span className="text-sm font-bold text-gray-900">Order #{row.original.order_id}</span>
-      ),
-    },
-    {
-      header: 'Partner',
-      cell: ({ row }) => (
-        <span className="text-sm text-gray-600">{row.original.partner_name || '—'}</span>
-      ),
-    },
-    {
-      header: 'Partner Earning',
-      accessorKey: 'partner_earning',
-      cell: ({ getValue }) => (
-        <span className="text-sm font-bold text-emerald-600">
-          ETB {parseFloat(getValue() || 0).toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      header: 'Commission (15%)',
-      accessorKey: 'fualaundry_commission',
-      cell: ({ getValue }) => (
-        <span className="text-sm font-bold text-purple-600">
-          ETB {parseFloat(getValue() || 0).toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      header: 'Date',
-      accessorKey: 'created_at',
-      cell: ({ getValue }) => (
-        <span className="text-xs text-gray-400">
-          {new Date(getValue()).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-        </span>
-      ),
-    },
-  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Financial Intelligence</h1>
-          <p className="text-gray-500 text-sm mt-1">Revenue split, commissions, and partner payouts.</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Landmark className="text-[#4c84a4]" size={26} />
+            Financial bookkeeping
+          </h1>
+          <p className="text-gray-500 text-sm mt-1 max-w-2xl">
+            Automated split ledger tied to{" "}
+            <code className="text-xs bg-gray-100 px-1 rounded">TransactionLog</code> — Fua
+            commission from catalogue markup (Fua − partner − rider). Rider fee is set under
+            System settings.
+          </p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm shadow-sm">
-          <Download size={16} /> Export CSV
-        </button>
+
+        {canExport && (
+          <button
+            type="button"
+            onClick={() => exportMutation.mutate()}
+            disabled={exportMutation.isPending}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#4c84a4] text-white text-sm font-medium hover:bg-[#3d6d88] disabled:opacity-60"
+          >
+            <Download size={18} />
+            {exportMutation.isPending ? "Preparing CSV…" : "Export statement (CSV)"}
+          </button>
+        )}
       </div>
 
-      {/* Revenue Split Cards */}
-      {isLoading ? <CardSkeleton count={4} /> : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <SummaryCard icon={TrendingUp} label="Total Revenue"      value={`ETB ${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}    color="bg-gradient-to-br from-blue-500 to-blue-600" />
-          <SummaryCard icon={Wallet}    label="Partner Earnings"    value={`ETB ${partnerEarnings.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}  color="bg-gradient-to-br from-emerald-500 to-green-600" />
-          <SummaryCard icon={Receipt}   label="Rider Fees (Est.)"   value={`ETB ${riderFees.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}        color="bg-gradient-to-br from-amber-500 to-orange-500" />
-          <SummaryCard icon={Percent}   label="FuaLaundry 15% Commission" value={`ETB ${commission.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} color="bg-gradient-to-br from-purple-500 to-purple-600" />
-        </div>
-      )}
-
-      {/* Revenue Chart */}
-      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-base font-bold text-gray-900">Revenue over Time</h3>
-          <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl p-1">
-            {TIME_FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setTimeFilter(f)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                  timeFilter === f ? 'bg-[#4c84a4] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="h-52">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="finGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4c84a4" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#4c84a4" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="commGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={v => `${v/1000}k`} />
-              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
-              <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#4c84a4" strokeWidth={2} fill="url(#finGrad)" dot={false} />
-              <Area type="monotone" dataKey="commission" name="Commission" stroke="#8b5cf6" strokeWidth={2} fill="url(#commGrad)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Transaction Table */}
-      <div className="space-y-3">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+      <div className="flex flex-col md:flex-row gap-3 p-4 rounded-2xl border border-gray-100 bg-gray-50/50">
+        <div className="relative flex-1">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
-            type="text"
-            placeholder="Search by order or partner…"
+            type="search"
+            placeholder="Order ID or partner name…"
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#4c84a4]/20 focus:border-[#4c84a4] outline-none transition-all"
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 text-sm bg-white"
           />
         </div>
-        {isLoading ? <TableSkeleton rows={6} columns={6} /> : <DataTable columns={columns} data={filtered} isLoading={false} />}
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white"
+          aria-label="From date"
+        />
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white"
+          aria-label="To date"
+        />
       </div>
+
+      <LedgerSummary filterParams={filterParams} />
+      <TransactionLogTable filterParams={filterParams} />
     </div>
   );
 }

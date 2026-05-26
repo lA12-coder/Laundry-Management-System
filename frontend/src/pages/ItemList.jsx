@@ -1,12 +1,21 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Search, RotateCcw, Plus, Minus, ShoppingBag, Trash2 } from "lucide-react";
+import {
+  Search,
+  RotateCcw,
+  Plus,
+  Minus,
+  ShoppingBag,
+  Trash2,
+  Shirt,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { addToCart, removeFromCart } from "../redux/cartSlice";
 import CommonHero from "../components/common/CommonHero";
 import { useNavigate } from "react-router-dom";
 import api from "../API/axios";
 import { formatETB } from "../lib/currency";
+import { resolveCatalogImageUrl } from "../lib/mediaUrl";
 
 const ItemListPage = () => {
   const navigate = useNavigate();
@@ -42,7 +51,7 @@ const ItemListPage = () => {
           cloth_name: product.cloth_name,
           size: product.size,
           price: Number(product.fua_price),
-          image: product.image,
+          image: product.image_url || product.image,
           quantity: qty,
         }),
       );
@@ -109,12 +118,16 @@ const ItemListPage = () => {
                     key={product.id}
                     className="bg-white rounded-[35px] p-6 shadow-xl border border-gray-100 hover:scale-[1.02] transition-transform"
                   >
-                    <div className="h-48 bg-gray-50 rounded-2xl mb-6 flex items-center justify-center p-4">
-                      <img
-                        src={product.image}
-                        alt={product.cloth_name}
-                        className="max-h-full object-contain"
-                      />
+                    <div className="h-48 bg-gray-50 rounded-2xl mb-6 flex items-center justify-center p-4 overflow-hidden">
+                      {resolveCatalogImageUrl(product.image_url || product.image) ? (
+                        <img
+                          src={resolveCatalogImageUrl(product.image_url || product.image)}
+                          alt={product.cloth_name}
+                          className="max-h-full w-full object-contain"
+                        />
+                      ) : (
+                        <Shirt className="text-gray-300" size={72} strokeWidth={1.25} />
+                      )}
                     </div>
 
                     <h3 className="text-2xl font-black italic text-gray-900 text-center mb-1 uppercase tracking-tight">

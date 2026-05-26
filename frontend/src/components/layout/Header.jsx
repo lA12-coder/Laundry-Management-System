@@ -4,8 +4,10 @@ import { assets } from "../../assets/assets";
 import { useSelector } from "react-redux";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext";
-import { Bell } from "lucide-react";
-import { useNotificationStore } from "../../stores/notificationStore";
+import { useAuth } from "../../hooks/useAuth";
+import { Permission } from "../../lib/rbac";
+import { AccessLevel } from "../../constants/roles";
+import NotificationCenter from "../common/NotificationCenter";
 
 const Header = () => {
   const [open, setOpen] = useState(false);
@@ -14,11 +16,9 @@ const Header = () => {
   const totalQuantity = useSelector((state) => state.cart.totalQuantity);
   const user = useSelector((state) => state.auth.user);
   const { logout } = useContext(AuthContext);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const notifications = useNotificationStore((state) => state.notifications);
-  const unreadCount = useNotificationStore((state) => state.unreadCount);
-  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
-
+  const { homePath, hasPermission, accessLevel } = useAuth();
+  const showOpsDashboard = hasPermission(Permission.VIEW_ADMIN_SHELL);
+  const showRiderConsole = accessLevel === AccessLevel.RIDER;
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
@@ -91,16 +91,16 @@ const Header = () => {
             Order Now
           </button>
 
-          {user && user.role == "admin" && (
+          {user && (showOpsDashboard || showRiderConsole) && (
             <button
-              onClick={() => navigate("/admin")}
+              onClick={() => navigate(homePath)}
               className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
                 scrolled
                   ? "bg-white text-[#4081a2] hover:bg-[#356d8a] border-2"
                   : "border-white border-2 text-white hover:bg-white hover:text-[#4081a2]"
               }`}
             >
-              Dashboard
+              {showRiderConsole ? "Rider console" : "Dashboard"}
             </button>
           )}
         </div>
@@ -132,45 +132,7 @@ const Header = () => {
             </span>
           </div>
 
-          {/* Notification Center */}
-          {user && (
-            <div className="relative">
-              <button
-                type="button"
-                className="relative rounded-full p-2"
-                onClick={() => setShowNotifications((prev) => !prev)}
-              >
-                <Bell size={20} color={scrolled ? "#4081a2" : "#FD9837"} />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-              {showNotifications && (
-                <div className="absolute right-0 top-12 z-50 w-72 rounded-2xl border border-gray-100 bg-white p-3 shadow-xl">
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-sm font-bold text-gray-900">Notifications</p>
-                    <button className="text-xs font-bold text-[#4c84a4]" onClick={markAllAsRead}>
-                      Mark all read
-                    </button>
-                  </div>
-                  <div className="max-h-64 space-y-2 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <p className="py-3 text-center text-xs text-gray-500">No notifications yet</p>
-                    ) : (
-                      notifications.slice(0, 8).map((n) => (
-                        <div key={n.id} className="rounded-xl bg-gray-50 p-2">
-                          <p className="text-xs font-bold text-gray-900">{n.title}</p>
-                          <p className="text-xs text-gray-600">{n.message}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {user && <NotificationCenter scrolled={scrolled} />}
 
           {user ? (
             <button

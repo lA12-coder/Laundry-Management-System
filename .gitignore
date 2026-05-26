@@ -2,6 +2,7 @@
 node_modules/
 venv/
 .env
+backend/media/
 # Logs
 logs
 *.log

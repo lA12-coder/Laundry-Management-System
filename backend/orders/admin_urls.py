@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     AdminActionLogViewSet,
+    ClothCategoryViewSet,
     DashboardMetricsViewSet,
     FinancialTransactionViewSet,
     OrderManagementViewSet,
@@ -14,6 +15,7 @@ router.register(r'orders', OrderManagementViewSet, basename="admin-order-managem
 router.register(r'transactions', FinancialTransactionViewSet, basename="admin-transactions")
 router.register(r'audit-logs', AdminActionLogViewSet, basename="admin-audit-logs")
 router.register(r'price-list', PriceListViewSet, basename="pricelist")
+router.register(r'price-categories', ClothCategoryViewSet, basename="cloth-category")
 
 urlpatterns = [
     path('', include(router.urls)),

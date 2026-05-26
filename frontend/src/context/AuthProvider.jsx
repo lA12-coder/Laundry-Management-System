@@ -11,6 +11,7 @@ import {
   setLoading,
 } from "../redux/userSlice";
 import { useCustomerSessionStore } from "../stores/customerSessionStore";
+import { startGhostSession } from "../services/ghostAccountApi";
 
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
@@ -81,6 +82,7 @@ export const AuthProvider = ({ children }) => {
           refreshToken: payload.refresh,
         }),
       );
+      return payload.user;
     } catch (error) {
       dispatch(loginFailure(extractApiError(error, "Login Failed")));
       throw error;
@@ -119,6 +121,24 @@ export const AuthProvider = ({ children }) => {
     return api.post("/accounts/resend-verification-email/", { email });
   };
 
+  const ghostSession = async (phone_number) => {
+    dispatch(loginStart());
+    try {
+      const payload = await startGhostSession(phone_number);
+      dispatch(
+        loginSuccess({
+          user: payload.user,
+          token: payload.access,
+          refreshToken: payload.refresh,
+        }),
+      );
+      return payload.user;
+    } catch (error) {
+      dispatch(loginFailure(extractApiError(error, "Guest session failed")));
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -129,6 +149,7 @@ export const AuthProvider = ({ children }) => {
         logout: logoutUser,
         verifyEmail,
         resendVerificationEmail,
+        ghostSession,
         loading,
         isAuthenticated,
         error,

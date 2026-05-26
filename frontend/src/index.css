@@ -1,7 +1,33 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (toggle adds .dark on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+  --accent: #0891b2;
+  --accent-bright: #22d3ee;
+  --surface-page: #f8fafc;
+  --surface-card: #ffffff;
+  --text-primary: #020617;
+}
+
+.dark {
+  color-scheme: dark;
+  --accent: #22d3ee;
+  --accent-bright: #67e8f9;
+  --surface-page: #18181b;
+  --surface-card: #27272a;
+  --text-primary: #f1f5f9;
+}
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  @apply bg-slate-50 text-slate-950 antialiased;
 }
 
 /* ── Toast slide-in animation ─────────────────────────────────── */
@@ -25,6 +51,25 @@
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
-*::-webkit-scrollbar { width: 6px; height: 6px; }
-*::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
-*::-webkit-scrollbar-track { background: transparent; }
+
+.dark * {
+  scrollbar-color: #52525b transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: #52525b;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}

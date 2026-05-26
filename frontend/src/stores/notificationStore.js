@@ -29,4 +29,9 @@ export const useNotificationStore = create((set) => ({
   updatePreferences: (newPrefs) => set((state) => ({
     preferences: { ...state.preferences, ...newPrefs }
   })),
+
+  syncFromServer: (items, unreadCount) => set({
+    notifications: items,
+    unreadCount: typeof unreadCount === 'number' ? unreadCount : items.filter((n) => !n.read).length,
+  }),
 }));

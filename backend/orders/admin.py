@@ -130,6 +130,7 @@ class TransactionLogAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
         "order",
         "partner_earning",
         "fualaundry_commission",
+        "rider_fee",
         "created_at",
     )
     list_filter = ("created_at",)
@@ -152,6 +153,15 @@ class AdminActionLogAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
 @admin.register(PriceList)
 class PriceListAdmin(AdminRoleRestrictedMixin, admin.ModelAdmin):
     list_display = ("cloth_name", "size", "fua_price", "partner_price", "is_active")
+    fields = (
+        "cloth_name",
+        "category",
+        "image",
+        "size",
+        "fua_price",
+        "partner_price",
+        "is_active",
+    )
     list_filter = ("size", "is_active")
     search_fields = ("cloth_name",)
     list_editable = ("fua_price", "partner_price", "is_active")

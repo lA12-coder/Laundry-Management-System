@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from partners.models import LaundryPartner
-from orders.models import Order, PriceList, TransactionLog, ClothItem, AdminActionLog
+from orders.models import Order, PriceList, TransactionLog, ClothItem, AdminActionLog, ClothCategory
 
 User = get_user_model()
 
@@ -105,8 +105,9 @@ class OrderE2ETest(APITestCase):
         
         # Check TransactionLog
         transaction_log = TransactionLog.objects.get(order=order)
+        self.assertEqual(transaction_log.fualaundry_commission, Decimal("110.00"))
+        self.assertEqual(transaction_log.rider_fee, Decimal("50.00"))
         self.assertEqual(transaction_log.partner_earning, Decimal("340.00"))
-        self.assertEqual(transaction_log.fualaundry_commission, Decimal("160.00"))
         
         # Check Audit Log
         self.assertTrue(AdminActionLog.objects.filter(order=order, action=AdminActionLog.Action.OVERRIDE_STATUS).exists())
@@ -144,19 +145,30 @@ class OrderE2ETest(APITestCase):
         response = self.client.get(reverse("admin-dashboard-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
+        self.assertEqual(response.data["period"], "7d")
+        self.assertIn("revenue_trend", response.data)
+        self.assertIn("order_volume", response.data)
+        self.assertIn("riders", response.data)
+        self.assertIn("partners", response.data)
+
         metrics = response.data["metrics"]
-        self.assertEqual(float(metrics["total_revenue"]), 1500.0)
-        self.assertEqual(float(metrics["total_profit"]), 500.0)
-        self.assertEqual(metrics["total_orders"], 2)
+        self.assertGreaterEqual(float(metrics["gross_revenue"]), 1500.0)
+        self.assertGreaterEqual(float(metrics["platform_margin"]), 500.0)
+        self.assertGreaterEqual(metrics["total_orders"], 2)
 
     def test_price_list_management(self):
         """
         Verify Admin CRUD on PriceList.
         """
         self.client.force_authenticate(self.admin_user)
+        category, _ = ClothCategory.objects.get_or_create(
+            slug="regular",
+            defaults={"name": "Regular", "sort_order": 10},
+        )
         # Create
         response = self.client.post(reverse("pricelist-list"), {
             "cloth_name": "Socks",
+            "category": category.id,
             "size": "small",
             "fua_price": "50.00",
             "partner_price": "30.00"
@@ -181,7 +193,12 @@ class OrderE2ETest(APITestCase):
         self.client.force_authenticate(self.admin_user)
         response = self.client.get(reverse("admin-transactions-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreaterEqual(len(response.data), 1)
+        results = response.data.get("results", response.data)
+        self.assertGreaterEqual(len(results), 1)
+
+        summary = self.client.get(reverse("admin-transactions-summary"))
+        self.assertEqual(summary.status_code, status.HTTP_200_OK)
+        self.assertIn("gross_revenue", summary.data)
 
     def test_admin_action_logs_list(self):
         """

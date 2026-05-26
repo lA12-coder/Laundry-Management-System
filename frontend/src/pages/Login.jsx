@@ -6,11 +6,12 @@ import AuthLayout from "../components/auth/AuthLayout";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import LaundryLoader from "../components/common/LaundryLoader";
 import { useSelector } from "react-redux";
+import { getPostLoginPath, canAccessPath } from "../lib/rbac";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
+  const from = location.state?.from?.pathname;
   const infoMessage = location.state?.message;
 
   const {
@@ -25,8 +26,13 @@ const LoginPage = () => {
 
   const onLogin = async (data) => {
     try {
-      await login(data.email, data.password);
-      navigate(from, { replace: true });
+      const loggedInUser = await login(data.email, data.password);
+      const roleHome = getPostLoginPath(loggedInUser);
+      const destination =
+        from && from !== "/login" && canAccessPath(loggedInUser, from)
+          ? from
+          : roleHome;
+      navigate(destination, { replace: true });
     } catch (error) {
       console.error("Login Error:", error);
     }

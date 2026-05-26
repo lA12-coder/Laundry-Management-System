@@ -16,8 +16,13 @@ from .signals import send_verification_email
 
 User = get_user_model()
 
+from .models import CustomerNotification
 from .serializers import (
     ChangePasswordSerializer,
+    ClaimAccountSerializer,
+    CustomerNotificationSerializer,
+    GhostSessionSerializer,
+    MarkNotificationsReadSerializer,
     NotificationPreferenceSerializer,
     SecuritySettingsSerializer,
     UserDetailSerializer,
@@ -370,6 +375,161 @@ class ResendVerificationEmailView(APIView):
         return json_response(
             status_text="success",
             message="Verification email sent successfully.",
+            http_status=status.HTTP_200_OK,
+        )
+
+
+def _issue_token_pair(user: User) -> dict[str, Any]:
+    refresh = RefreshToken.for_user(user)
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": UserDetailSerializer(user).data,
+    }
+
+
+class GhostSessionView(APIView):
+    """
+    Temporary-link session for ghost customers (is_active=False).
+    Enables dashboard access before account claim.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = GhostSessionSerializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return json_response(
+                status_text="error",
+                message="Ghost session could not be started.",
+                errors=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        phone = serializer.validated_data["phone_number"]
+        user = User.objects.filter(
+            phone_number=phone,
+            role=User.Role.CUSTOMER,
+            is_active=False,
+        ).first()
+        if not user:
+            return json_response(
+                status_text="error",
+                message="No guest profile found for this phone number.",
+                http_status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return json_response(
+            status_text="success",
+            message="Guest session started.",
+            data=_issue_token_pair(user),
+            http_status=status.HTTP_200_OK,
+        )
+
+
+class ClaimAccountView(APIView):
+    """Finalize ghost account: phone match, password setup, activate profile."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = ClaimAccountSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return json_response(
+                status_text="error",
+                message="Account claim failed due to validation errors.",
+                errors=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+        email = (serializer.validated_data.get("email") or "").strip().lower()
+        if email and email != user.email:
+            if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+                return json_response(
+                    status_text="error",
+                    message="Email is already registered.",
+                    errors={"email": ["This email is already in use."]},
+                    http_status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.email = email
+
+        user.set_password(serializer.validated_data["password"])
+        user.is_active = True
+        user.is_verified = True
+        user.save()
+
+        order_count = user.orders.count()
+        return json_response(
+            status_text="success",
+            message="Account claimed successfully. Your order history is now secured.",
+            data={
+                **_issue_token_pair(user),
+                "orders_linked": order_count,
+            },
+            http_status=status.HTTP_200_OK,
+        )
+
+
+class CustomerNotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        limit = min(int(request.query_params.get("limit", 50)), 100)
+        queryset = CustomerNotification.objects.filter(user=request.user).order_by(
+            "-created_at"
+        )[:limit]
+        unread_count = CustomerNotification.objects.filter(
+            user=request.user,
+            is_read=False,
+        ).count()
+        serializer = CustomerNotificationSerializer(queryset, many=True)
+        return json_response(
+            status_text="success",
+            message="Notifications fetched successfully.",
+            data={
+                "results": serializer.data,
+                "unread_count": unread_count,
+            },
+            http_status=status.HTTP_200_OK,
+        )
+
+
+class CustomerNotificationReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        serializer = MarkNotificationsReadSerializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return json_response(
+                status_text="error",
+                message="Invalid notification read payload.",
+                errors=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ids = serializer.validated_data.get("ids") or []
+        queryset = CustomerNotification.objects.filter(user=request.user, is_read=False)
+        if ids:
+            queryset = queryset.filter(pk__in=ids)
+        updated = queryset.update(is_read=True)
+        unread_count = CustomerNotification.objects.filter(
+            user=request.user,
+            is_read=False,
+        ).count()
+        return json_response(
+            status_text="success",
+            message="Notifications marked as read.",
+            data={"updated": updated, "unread_count": unread_count},
             http_status=status.HTTP_200_OK,
         )
 

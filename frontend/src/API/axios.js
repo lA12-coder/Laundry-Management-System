@@ -4,10 +4,31 @@ import { logout, loginSuccess } from "../redux/userSlice";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
+
+function isFormDataBody(data) {
+  return typeof FormData !== "undefined" && data instanceof FormData;
+}
+
+function clearContentTypeHeader(headers) {
+  if (!headers) return;
+  if (typeof headers.delete === "function") {
+    headers.delete("Content-Type");
+    headers.delete("content-type");
+    return;
+  }
+  delete headers["Content-Type"];
+  delete headers["content-type"];
+}
+
+function setJsonContentType(headers) {
+  if (!headers) return;
+  if (typeof headers.set === "function") {
+    headers.set("Content-Type", "application/json");
+    return;
+  }
+  headers["Content-Type"] = "application/json";
+}
 
 api.interceptors.request.use(
   (config) => {
@@ -15,6 +36,15 @@ api.interceptors.request.use(
     const token = state.auth.token || localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (isFormDataBody(config.data)) {
+      clearContentTypeHeader(config.headers);
+    } else if (
+      config.data &&
+      typeof config.data === "object" &&
+      !(config.data instanceof URLSearchParams)
+    ) {
+      setJsonContentType(config.headers);
     }
     return config;
   },

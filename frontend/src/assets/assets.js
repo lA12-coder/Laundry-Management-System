@@ -1,4 +1,4 @@
-import Logo from "../assets/img/logo.png";
+import Logo from "../assets/img/Logo.png";
 import HeroImg from "../assets/img/HeroImg.png";
 import LogoBlue from "../assets/img/LogoBlue.png";
 import OrderImg from "../assets/img/OrderImg.png";

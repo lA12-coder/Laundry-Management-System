@@ -1,7 +1,41 @@
+from decimal import Decimal
+
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.utils.text import slugify
 from partners.models import LaundryPartner
+
+
+class ClothCategory(models.Model):
+    """Admin-managed cloth groupings for the price catalogue."""
+
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=50, unique=True)
+    description = models.TextField(blank=True, default="")
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+        verbose_name = "Cloth category"
+        verbose_name_plural = "Cloth categories"
+
+    def __str__(self) -> str:
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name) or "category"
+            slug = base
+            counter = 1
+            while ClothCategory.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
 
 
 class PriceList(models.Model):
@@ -16,6 +50,11 @@ class PriceList(models.Model):
         LARGE = "large", "Large"
 
     cloth_name = models.CharField(max_length=255)
+    category = models.ForeignKey(
+        ClothCategory,
+        on_delete=models.PROTECT,
+        related_name="price_entries",
+    )
     image = models.ImageField(upload_to="cloth_images", null=True, blank=True)
     size = models.CharField(max_length=20, choices=Size.choices, default=Size.SMALL)
     fua_price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -77,6 +116,11 @@ class Order(models.Model):
     base_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
+    rider_accepted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the assigned rider confirmed the job and unlocked customer contact.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -128,6 +172,7 @@ class TransactionLog(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="transaction_log")
     partner_earning = models.DecimalField(max_digits=12, decimal_places=2)
     fualaundry_commission = models.DecimalField(max_digits=12, decimal_places=2)
+    rider_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("50.00"))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -143,7 +143,7 @@ const ClothSelection = () => {
       </div>
 
       {/* Global CSS for Swiper pagination color */}
-      <style jsx global>{`
+      <style>{`
         .swiper-pagination-bullet-active {
           background: #4081a2 !important;
         }

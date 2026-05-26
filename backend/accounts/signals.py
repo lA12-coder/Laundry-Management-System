@@ -9,7 +9,7 @@ import os
 
 @receiver(post_save,sender=User)
 def send_verification_email(sender, instance, created, **kwargs):
-    if created and not instance.is_verified:
+    if created and not instance.is_verified and instance.is_active and instance.email:
         token = default_token_generator.make_token(instance)
         uid = urlsafe_base64_encode(force_bytes(instance.pk))
         verify_url = f"{os.getenv('FRONT_END_URL')}/verify-email/{uid}/{token}"
