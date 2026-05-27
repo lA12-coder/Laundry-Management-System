@@ -21,6 +21,17 @@ def _parse_rider_coords(request):
         return None
 
 
+def _parse_coords_from_body(request):
+    lat = request.data.get("lat")
+    lng = request.data.get("lng")
+    if lat in (None, "") or lng in (None, ""):
+        return None
+    try:
+        return float(lat), float(lng)
+    except (TypeError, ValueError):
+        return None
+
+
 class RiderJobViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Rider logistics API — privacy wall until explicit job acceptance.
@@ -33,6 +44,8 @@ class RiderJobViewSet(viewsets.ReadOnlyModelViewSet):
         Order.Status.PENDING,
         Order.Status.PICKED_UP,
         Order.Status.WASHING,
+        Order.Status.WASHED,
+        Order.Status.DRIED,
         Order.Status.READY,
         Order.Status.OUT_FOR_DELIVERY,
     ]
@@ -121,3 +134,85 @@ class RiderJobViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(order)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], url_path="confirm-picked-up")
+    def confirm_picked_up(self, request, pk=None):
+        order = self.get_object()
+        user = request.user
+        if order.rider_id != user.id or order.rider_accepted_at is None:
+            return Response(
+                {"detail": "Accept this assignment before confirming pickup."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if order.status in (Order.Status.CANCELLED, Order.Status.DELIVERED):
+            return Response(
+                {"detail": "Order is already closed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        coords = _parse_coords_from_body(request)
+        update_fields = ["status"]
+        order.status = Order.Status.WASHING
+        if coords:
+            order.rider_last_latitude = coords[0]
+            order.rider_last_longitude = coords[1]
+            update_fields += ["rider_last_latitude", "rider_last_longitude"]
+        order.save(update_fields=update_fields)
+        return Response(self.get_serializer(order).data)
+
+    @action(detail=True, methods=["post"], url_path="mark-delivered")
+    def mark_delivered(self, request, pk=None):
+        order = self.get_object()
+        user = request.user
+        if order.rider_id != user.id or order.rider_accepted_at is None:
+            return Response(
+                {"detail": "Only the assigned rider can mark delivered."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if order.status in (Order.Status.CANCELLED, Order.Status.DELIVERED):
+            return Response(
+                {"detail": "Order is already closed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        coords = _parse_coords_from_body(request)
+        now = timezone.now()
+        update_fields = ["rider_delivered_confirmed_at", "status"]
+        order.rider_delivered_confirmed_at = now
+        if coords:
+            order.rider_last_latitude = coords[0]
+            order.rider_last_longitude = coords[1]
+            update_fields += ["rider_last_latitude", "rider_last_longitude"]
+
+        if order.customer_received_confirmed_at:
+            order.status = Order.Status.DELIVERED
+            order.delivered_at = now
+            update_fields.append("delivered_at")
+        else:
+            order.status = Order.Status.OUT_FOR_DELIVERY
+        order.save(update_fields=update_fields)
+        return Response(self.get_serializer(order).data)
+
+    @action(detail=True, methods=["post"], url_path="update-location")
+    def update_location(self, request, pk=None):
+        order = self.get_object()
+        user = request.user
+        if order.rider_id != user.id or order.rider_accepted_at is None:
+            return Response(
+                {"detail": "Only the assigned rider can update live location."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if order.status in (Order.Status.CANCELLED, Order.Status.DELIVERED):
+            return Response(
+                {"detail": "Order is already closed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        coords = _parse_coords_from_body(request)
+        if not coords:
+            return Response(
+                {"detail": "lat and lng are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        order.rider_last_latitude = coords[0]
+        order.rider_last_longitude = coords[1]
+        order.save(update_fields=["rider_last_latitude", "rider_last_longitude"])
+        return Response(self.get_serializer(order).data)

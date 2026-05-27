@@ -158,9 +158,9 @@ export function getPostLoginPath(user) {
     case AccessLevel.RIDER:
       return "/rider";
     case AccessLevel.CUSTOMER:
-      return "/dashboard";
+      return "/";
     case AccessLevel.PARTNER:
-      return "/unauthorized";
+      return "/partner";
     default:
       return "/login";
   }
@@ -182,6 +182,9 @@ export function canAccessPath(user, pathname) {
   }
   if (pathname.startsWith("/rider")) {
     return level === AccessLevel.RIDER;
+  }
+  if (pathname.startsWith("/partner")) {
+    return level === AccessLevel.PARTNER;
   }
   if (
     pathname.startsWith("/dashboard") ||

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationQueryKeys } from '../../services/notificationApi';
 import { Package, Clock, Truck, CheckCircle, BellRing, Settings, Loader2, ArrowRight } from 'lucide-react';
 import { useSelector } from 'react-redux';
@@ -7,6 +7,8 @@ import { toast } from 'react-hot-toast';
 import api from "../../API/axios";
 import { Link } from 'react-router-dom';
 import { useNotificationStore } from "../../stores/notificationStore";
+import { markOrderReceived } from "../../services/ordersApi";
+import OrderTrackingMap from "./OrderTrackingMap";
 
 // The linear progression of order statuses
 const STATUS_STEPS = [
@@ -110,6 +112,11 @@ export default function OrderTracker() {
   
   // Track previous statuses for toast notifications
   const [prevStatuses, setPrevStatuses] = useState({});
+  const [feedbackState, setFeedbackState] = useState({
+    orderId: null,
+    rating: 5,
+    comment: "",
+  });
 
   const fetchCustomerOrders = async () => {
     const { data } = await api.get('/orders/');
@@ -121,6 +128,21 @@ export default function OrderTracker() {
     queryFn: fetchCustomerOrders,
     staleTime: 30_000, // 30 seconds fresh
     refetchInterval: 30_000, // Poll every 30s
+  });
+
+  const markReceivedMutation = useMutation({
+    mutationFn: ({ orderId, rating, comment }) =>
+      markOrderReceived(orderId, { rating, comment }),
+    onSuccess: (updatedOrder) => {
+      queryClient.setQueryData(["customerOrders"], (previous = []) =>
+        previous.map((order) => (order.id === updatedOrder.id ? updatedOrder : order)),
+      );
+      setFeedbackState({ orderId: null, rating: 5, comment: "" });
+      toast.success("Thanks! Your receipt and feedback were saved.");
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.detail || "Could not submit feedback.");
+    },
   });
 
   // Effect to trigger toasts when status changes
@@ -217,6 +239,31 @@ export default function OrderTracker() {
 
               <OrderStepper status={order.status} />
 
+              <div className="mt-5">
+                <OrderTrackingMap order={order} />
+              </div>
+
+              {order.rider_delivery_confirmed && !order.customer_received && (
+                <div className="mt-4 rounded-2xl border border-[#4c84a4]/30 bg-blue-50 p-4">
+                  <p className="text-sm text-slate-700 mb-3">
+                    Your rider marked this order as delivered. Please confirm you received everything.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFeedbackState({
+                        orderId: order.id,
+                        rating: 5,
+                        comment: "",
+                      })
+                    }
+                    className="px-4 py-2 rounded-xl bg-[#4c84a4] hover:bg-[#3a6680] text-white font-bold text-sm"
+                  >
+                    Mark as Received
+                  </button>
+                </div>
+              )}
+
               <div className="mt-8 pt-6 border-t border-gray-50 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-4 rounded-2xl">
                   <p className="text-xs font-bold text-gray-400 uppercase mb-1">Delivery Address</p>
@@ -263,6 +310,78 @@ export default function OrderTracker() {
       <Link to="/checkout" className="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-[#4c84a4] text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-900/30 z-40">
         <Package size={24} />
       </Link>
+
+      {feedbackState.orderId && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl border border-slate-200 p-6">
+            <h3 className="text-xl font-black text-slate-900">Rate your rider</h3>
+            <p className="text-sm text-slate-500 mt-1">
+              Thanks for confirming delivery. Share your rider experience below.
+            </p>
+
+            <div className="mt-4">
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-500">
+                Rating (1 to 5)
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={5}
+                value={feedbackState.rating}
+                onChange={(event) =>
+                  setFeedbackState((prev) => ({
+                    ...prev,
+                    rating: Number(event.target.value || 1),
+                  }))
+                }
+                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-500">
+                Comment
+              </label>
+              <textarea
+                value={feedbackState.comment}
+                onChange={(event) =>
+                  setFeedbackState((prev) => ({
+                    ...prev,
+                    comment: event.target.value,
+                  }))
+                }
+                rows={4}
+                placeholder="Tell us about the rider service quality..."
+                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setFeedbackState({ orderId: null, rating: 5, comment: "" })}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={markReceivedMutation.isPending}
+                onClick={() =>
+                  markReceivedMutation.mutate({
+                    orderId: feedbackState.orderId,
+                    rating: feedbackState.rating,
+                    comment: feedbackState.comment,
+                  })
+                }
+                className="px-4 py-2 rounded-xl bg-[#4c84a4] hover:bg-[#3a6680] text-white text-sm font-bold disabled:opacity-60"
+              >
+                {markReceivedMutation.isPending ? "Submitting..." : "Submit Feedback"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

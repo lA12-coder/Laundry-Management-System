@@ -33,3 +33,33 @@ export async function acceptRiderJob(orderId) {
   const { data } = await api.post(`/rider/jobs/${orderId}/accept/`);
   return data?.data ?? data;
 }
+
+export async function confirmRiderPickup(orderId, coords = {}) {
+  const payload = {};
+  if (coords.lat != null && coords.lng != null) {
+    payload.lat = coords.lat;
+    payload.lng = coords.lng;
+  }
+  const { data } = await api.post(`/rider/jobs/${orderId}/confirm-picked-up/`, payload);
+  return data?.data ?? data;
+}
+
+export async function markRiderDelivered(orderId, coords = {}) {
+  const payload = {};
+  if (coords.lat != null && coords.lng != null) {
+    payload.lat = coords.lat;
+    payload.lng = coords.lng;
+  }
+  const { data } = await api.post(`/rider/jobs/${orderId}/mark-delivered/`, payload);
+  return data?.data ?? data;
+}
+
+export async function updateRiderJobLocation(orderId, coords = {}) {
+  const payload = {};
+  if (coords.lat != null && coords.lng != null) {
+    payload.lat = coords.lat;
+    payload.lng = coords.lng;
+  }
+  const { data } = await api.post(`/rider/jobs/${orderId}/update-location/`, payload);
+  return data?.data ?? data;
+}

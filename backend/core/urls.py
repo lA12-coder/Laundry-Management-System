@@ -16,6 +16,7 @@ urlpatterns = [
         path("", include("products.urls")),
         path("", include("partners.urls")),
         path("rider/", include("orders.rider_urls")),
+        path("partner/", include("orders.partner_urls")),
 
         # Admin-only Endpoints
         path("admin/", include([

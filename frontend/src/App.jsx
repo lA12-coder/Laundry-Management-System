@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
 import Aboutus from "./pages/Aboutus";
@@ -27,6 +27,9 @@ import ClaimAccountPage from "./pages/customer/ClaimAccountPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import RiderLayout from "./components/rider/RiderLayout";
 import RiderQueue from "./pages/rider/RiderQueue";
+import RiderSettings from "./pages/rider/RiderSettings";
+import PartnerLayout from "./components/partner/PartnerLayout";
+import PartnerPanel from "./pages/partner/PartnerPanel";
 import { AccessLevel } from "./constants/roles";
 
 const ADMIN_LEVELS = [
@@ -128,6 +131,19 @@ function App() {
         }
       >
         <Route index element={<RiderQueue />} />
+        <Route path="settings" element={<RiderSettings />} />
+      </Route>
+
+      {/* ─── Partner panel ──────────────────────────────────────── */}
+      <Route
+        path="/partner"
+        element={
+          <ProtectedRoute allowedRoles={[AccessLevel.PARTNER]}>
+            <PartnerLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<PartnerPanel />} />
       </Route>
 
       {/* ─── Customer-facing site ──────────────────────────────── */}
@@ -137,6 +153,7 @@ function App() {
         <Route path="/contact-us" element={<ContactUs />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/item-list" element={<ItemListPage />} />
+        <Route path="/items-list" element={<Navigate to="/item-list" replace />} />
         <Route
           path="/dashboard"
           element={

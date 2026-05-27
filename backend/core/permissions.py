@@ -37,3 +37,16 @@ class IsRiderRole(BasePermission):
             and user.is_active
             and user.role == User.Role.RIDER
         )
+
+
+class IsPartnerRole(BasePermission):
+    """Active authenticated laundry partners only."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and user.is_active
+            and user.role == User.Role.PARTNER
+        )

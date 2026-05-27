@@ -5,6 +5,7 @@ import { User, Lock, MapPin, Bell, Shield, Loader2, Save } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import api from '../../API/axios';
 import { useNotificationStore } from '../../stores/notificationStore';
+import { isValidPhoneInput, normalizePhoneInput } from "../../lib/phone";
 // Note: assuming redux userSlice has an updateProfile action if needed, or query invalidate handles it.
 
 function ProfileForm({ user }) {
@@ -32,9 +33,13 @@ function ProfileForm({ user }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!isValidPhoneInput(form.phone_number)) {
+      toast.error("Use 09XXXXXXXX or +2519XXXXXXXX");
+      return;
+    }
     updateProfile.mutate({
       full_name: form.full_name,
-      phone_number: form.phone_number,
+      phone_number: normalizePhoneInput(form.phone_number),
       home_address: form.home_address
     });
   };

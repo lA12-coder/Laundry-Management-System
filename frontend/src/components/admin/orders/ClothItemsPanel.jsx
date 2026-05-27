@@ -1,6 +1,6 @@
 import { Package } from "lucide-react";
 
-export default function ClothItemsPanel({ items }) {
+export default function ClothItemsPanel({ items, riderReviewComment = "", riderReviewRating = null }) {
   if (!items?.length) {
     return (
       <div className="px-6 py-4 bg-gray-50/80 dark:bg-gray-800/60 text-sm text-gray-400 dark:text-gray-500 italic border-t border-gray-100 dark:border-gray-800">
@@ -46,6 +46,23 @@ export default function ClothItemsPanel({ items }) {
           </tbody>
         </table>
       </div>
+      {(riderReviewComment || riderReviewRating) && (
+        <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 p-3">
+          <p className="text-[10px] uppercase tracking-wider font-bold text-amber-700 dark:text-amber-300">
+            Customer rider feedback
+          </p>
+          {riderReviewRating ? (
+            <p className="text-xs font-semibold text-amber-800 dark:text-amber-200 mt-1">
+              Rating: {riderReviewRating}/5
+            </p>
+          ) : null}
+          {riderReviewComment ? (
+            <p className="text-xs text-amber-900 dark:text-amber-100 mt-1 leading-relaxed">
+              {riderReviewComment}
+            </p>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

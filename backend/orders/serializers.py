@@ -5,7 +5,15 @@ from django.db.models import Q
 from rest_framework import serializers
 
 from partners.models import LaundryPartner
-from .models import AdminActionLog, Order, TransactionLog, ClothItem, PriceList, ClothCategory
+from .models import (
+    AdminActionLog,
+    Order,
+    TransactionLog,
+    ClothItem,
+    PriceList,
+    ClothCategory,
+    RiderReview,
+)
 
 User = get_user_model()
 
@@ -147,6 +155,11 @@ class PriceListSerializer(serializers.ModelSerializer):
             instance.image = None
         return super().update(instance, validated_data)
 
+    def create(self, validated_data):
+        # Helper flag is only meaningful on update; ignore it on create.
+        validated_data.pop("clear_image", None)
+        return super().create(validated_data)
+
     def validate(self, attrs):
         fua = attrs.get("fua_price", getattr(self.instance, "fua_price", None))
         partner = attrs.get(
@@ -225,6 +238,10 @@ class OrderListSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="customer.full_name", read_only=True)
     customer_phone = serializers.CharField(source="customer.phone_number", read_only=True)
     is_ghost_customer = serializers.SerializerMethodField()
+    customer_received = serializers.SerializerMethodField()
+    rider_delivery_confirmed = serializers.SerializerMethodField()
+    rider_review_rating = serializers.SerializerMethodField()
+    rider_review_comment = serializers.SerializerMethodField()
     
     partner = serializers.PrimaryKeyRelatedField(
         queryset=LaundryPartner.objects.all(),
@@ -261,14 +278,51 @@ class OrderListSerializer(serializers.ModelSerializer):
             "rider",       
             "rider_name",    
             "delivery_address",
+            "pickup_latitude",
+            "pickup_longitude",
+            "rider_last_latitude",
+            "rider_last_longitude",
+            "rider_delivered_confirmed_at",
+            "customer_received_confirmed_at",
+            "customer_received",
+            "rider_delivery_confirmed",
             "total_amount",
             "base_price",
             "cloth_items",
+            "rider_review_rating",
+            "rider_review_comment",
             "created_at",
             "delivered_at",
         ]
         
-        read_only_fields = ["total_amount", "base_price", "created_at", "delivered_at"]
+        read_only_fields = [
+            "total_amount",
+            "base_price",
+            "created_at",
+            "delivered_at",
+            "rider_last_latitude",
+            "rider_last_longitude",
+            "rider_delivered_confirmed_at",
+            "customer_received_confirmed_at",
+            "customer_received",
+            "rider_delivery_confirmed",
+            "rider_review_rating",
+            "rider_review_comment",
+        ]
+
+    def get_customer_received(self, obj: Order) -> bool:
+        return bool(obj.customer_received_confirmed_at)
+
+    def get_rider_delivery_confirmed(self, obj: Order) -> bool:
+        return bool(obj.rider_delivered_confirmed_at)
+
+    def get_rider_review_rating(self, obj: Order):
+        review = getattr(obj, "rider_review", None)
+        return review.rating if review else None
+
+    def get_rider_review_comment(self, obj: Order):
+        review = getattr(obj, "rider_review", None)
+        return review.comment if review else ""
 
 
 class OrderStatusOverrideSerializer(serializers.Serializer):
@@ -281,6 +335,34 @@ class OrderReassignRiderSerializer(serializers.Serializer):
     )
 
 
+class OrderAssignPartnerSerializer(serializers.Serializer):
+    partner = serializers.PrimaryKeyRelatedField(
+        queryset=LaundryPartner.objects.filter(is_active=True)
+    )
+
+
+class PartnerOrderStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices=[
+            Order.Status.WASHING,
+            Order.Status.WASHED,
+            Order.Status.DRIED,
+        ]
+    )
+
+
+class PartnerSettlementClearSerializer(serializers.Serializer):
+    partner_id = serializers.PrimaryKeyRelatedField(
+        source="partner",
+        queryset=LaundryPartner.objects.filter(is_active=True),
+    )
+
+
+class CustomerReceiveConfirmationSerializer(serializers.Serializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5)
+    comment = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+
 class TransactionLogSerializer(serializers.ModelSerializer):
     order_id = serializers.IntegerField(source="order.id", read_only=True)
     order_status = serializers.CharField(source="order.status", read_only=True)
@@ -290,6 +372,9 @@ class TransactionLogSerializer(serializers.ModelSerializer):
     base_value = serializers.DecimalField(
         source="order.total_amount", max_digits=12, decimal_places=2, read_only=True
     )
+    settlement_status = serializers.CharField(read_only=True)
+    paid_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    payment_date = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = TransactionLog
@@ -303,6 +388,9 @@ class TransactionLogSerializer(serializers.ModelSerializer):
             "fualaundry_commission",
             "rider_fee",
             "partner_earning",
+            "settlement_status",
+            "paid_amount",
+            "payment_date",
             "created_at",
         ]
 

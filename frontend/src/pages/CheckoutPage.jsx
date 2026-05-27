@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   MapPin,
@@ -22,6 +22,8 @@ import {
   startGhostSession,
 } from "../services/ghostAccountApi";
 import { formatETB } from "../lib/currency";
+import { isValidPhoneInput } from "../lib/phone";
+import { getPrecisePosition, geolocationErrorMessage } from "../lib/geolocation";
 
 const CheckoutPage = () => {
   const { items, totalAmount, totalQuantity } = useSelector(
@@ -31,6 +33,7 @@ const CheckoutPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [pickupCoords, setPickupCoords] = useState(null);
   const phoneNumber = "+251970713018";
   const {
     register,
@@ -43,6 +46,27 @@ const CheckoutPage = () => {
   const urgency = watch("urgency", "regular");
   const urgencyFee = urgency === "urgent" ? totalQuantity * 10 : 0;
   const finalTotal = totalAmount + urgencyFee;
+
+  useEffect(() => {
+    getPrecisePosition({ maxAccuracyMeters: 35, attempts: 3 })
+      .then((position) => {
+        const confirmed = window.confirm(
+          "Is this location where your clothes will be picked up and delivered?",
+        );
+        if (!confirmed) return;
+        setPickupCoords({ lat: position.lat, lng: position.lng });
+        if ((position.accuracy ?? 999) > 80) {
+          toast("Location saved but GPS accuracy is low. Please retry in open sky if possible.", {
+            icon: "📍",
+          });
+        } else {
+          toast.success("Pickup location confirmed.");
+        }
+      })
+      .catch((error) => {
+        toast.error(geolocationErrorMessage(error));
+      });
+  }, []);
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -60,6 +84,10 @@ const CheckoutPage = () => {
           quantity: item.quantity,
         })),
       };
+      if (pickupCoords) {
+        payload.pickup_latitude = pickupCoords.lat;
+        payload.pickup_longitude = pickupCoords.lng;
+      }
       await api.post("/orders/", payload);
       dispatch(clearCart());
       try {
@@ -79,7 +107,7 @@ const CheckoutPage = () => {
       navigate("/dashboard");
     } catch (error) {
       setLoading(false);
-      toast.error(error?.response?.data?.error || "Unable to place order.");
+      toast.error(error?.response?.data?.error || error?.message || "Unable to place order.");
     }
   };
 
@@ -211,13 +239,11 @@ const CheckoutPage = () => {
                         <input
                           {...register("phone", {
                             required: "Phone is required",
-                            pattern: {
-                              value: /^\d{10}$/,
-                              message: "Must be 10 digits",
-                            },
+                            validate: (value) =>
+                              isValidPhoneInput(value) || "Use 09XXXXXXXX or +2519XXXXXXXX",
                           })}
                           type="tel"
-                          placeholder="0911000000"
+                          placeholder="09XXXXXXXX or +2519XXXXXXXX"
                           className="w-full pl-12 pr-4 py-4 bg-gray-50 rounded-2xl border border-transparent focus:border-[#4c84a4] focus:bg-white outline-none transition-all font-medium"
                         />
                       </div>

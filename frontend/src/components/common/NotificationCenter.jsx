@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
+import toast from "react-hot-toast";
 import {
   fetchNotifications,
   markNotificationsRead,
@@ -14,6 +15,7 @@ import { useNotificationStore } from "../../stores/notificationStore";
 export default function NotificationCenter({ scrolled = false, enabled = true }) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef(null);
+  const latestSystemToastId = useRef(null);
   const queryClient = useQueryClient();
   const markAllAsReadLocal = useNotificationStore((s) => s.markAllAsRead);
   const syncFromServer = useNotificationStore((s) => s.syncFromServer);
@@ -28,6 +30,7 @@ export default function NotificationCenter({ scrolled = false, enabled = true })
 
   const notifications = data?.results ?? [];
   const unreadCount = data?.unread_count ?? 0;
+  const visibleNotifications = notifications.filter((n) => !n.is_read);
 
   useEffect(() => {
     if (!data?.results) return;
@@ -45,11 +48,61 @@ export default function NotificationCenter({ scrolled = false, enabled = true })
     );
   }, [data, syncFromServer]);
 
+  useEffect(() => {
+    if (!notifications.length) return;
+    const newest = notifications.find(
+      (n) =>
+        !n.is_read &&
+        n.notification_type === "system" &&
+        n.metadata?.event === "order_created",
+    );
+    if (!newest) return;
+    if (latestSystemToastId.current === newest.id) return;
+    latestSystemToastId.current = newest.id;
+    toast.success(newest.message || "New order received.");
+  }, [notifications]);
+
   const markReadMutation = useMutation({
     mutationFn: (ids) => markNotificationsRead(ids),
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: notificationQueryKeys.all });
+      const previous = queryClient.getQueryData(notificationQueryKeys.all);
+      const currentResults = previous?.results ?? [];
+      const currentUnread =
+        typeof previous?.unread_count === "number"
+          ? previous.unread_count
+          : currentResults.filter((n) => !n.is_read).length;
+
+      if (!ids || ids.length === 0) {
+        markAllAsReadLocal();
+        queryClient.setQueryData(notificationQueryKeys.all, {
+          results: [],
+          unread_count: 0,
+        });
+      } else {
+        const nextResults = currentResults.map((n) =>
+          ids.includes(n.id) ? { ...n, is_read: true } : n,
+        );
+        const nextUnread = Math.max(
+          0,
+          currentUnread - ids.filter((id) => currentResults.some((n) => n.id === id && !n.is_read)).length,
+        );
+        queryClient.setQueryData(notificationQueryKeys.all, {
+          results: nextResults,
+          unread_count: nextUnread,
+        });
+      }
+
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationQueryKeys.all });
       markAllAsReadLocal();
+    },
+    onError: (_error, _ids, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(notificationQueryKeys.all, context.previous);
+      }
     },
   });
 
@@ -84,7 +137,7 @@ export default function NotificationCenter({ scrolled = false, enabled = true })
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-zinc-700 dark:bg-zinc-800 dark:shadow-zinc-950/50">
+        <div className="absolute right-0 top-12 z-[10000] w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-zinc-700 dark:bg-zinc-800 dark:shadow-zinc-950/50">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-sm font-bold text-slate-950 dark:text-slate-100">Notifications</p>
             <button
@@ -99,17 +152,15 @@ export default function NotificationCenter({ scrolled = false, enabled = true })
           <div className="max-h-72 space-y-2 overflow-y-auto">
             {isLoading ? (
               <p className="py-4 text-center text-xs text-slate-400 dark:text-zinc-500">Loading alerts…</p>
-            ) : notifications.length === 0 ? (
+            ) : visibleNotifications.length === 0 ? (
               <p className="py-4 text-center text-xs text-slate-500 dark:text-slate-400">No notifications yet</p>
             ) : (
-              notifications.slice(0, 12).map((n) => (
+              visibleNotifications.slice(0, 12).map((n) => (
                 <button
                   key={n.id}
                   type="button"
                   className={`w-full rounded-xl p-2 text-left transition ${
-                    n.is_read
-                      ? "bg-slate-50 dark:bg-zinc-900/50"
-                      : "bg-cyan-50/80 ring-1 ring-cyan-200 dark:bg-cyan-950/40 dark:ring-cyan-800"
+                    "bg-cyan-50/80 ring-1 ring-cyan-200 dark:bg-cyan-950/40 dark:ring-cyan-800"
                   }`}
                   onClick={() => {
                     if (!n.is_read) markReadMutation.mutate([n.id]);

@@ -42,6 +42,7 @@ export default function PricingWorkspace() {
     queryFn: fetchAdminPriceList,
     staleTime: 30_000,
   });
+  const activeEntries = entries.filter((entry) => entry?.is_active !== false);
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: pricingQueryKeys.all });
@@ -169,7 +170,7 @@ export default function PricingWorkspace() {
       />
 
       <PricingMatrix
-        entries={entries}
+        entries={activeEntries}
         categories={categories}
         isLoading={entriesLoading || categoriesLoading}
         canEdit={canEdit}

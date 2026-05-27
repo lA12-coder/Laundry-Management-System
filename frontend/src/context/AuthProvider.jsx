@@ -12,6 +12,7 @@ import {
 } from "../redux/userSlice";
 import { useCustomerSessionStore } from "../stores/customerSessionStore";
 import { startGhostSession } from "../services/ghostAccountApi";
+import { normalizePhoneInput } from "../lib/phone";
 
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
@@ -96,7 +97,7 @@ export const AuthProvider = ({ children }) => {
         username: data.email?.split("@")[0] || data.full_name?.replace(/\s+/g, "_"),
         full_name: data.full_name,
         email: data.email,
-        phone_number: data.phone_number,
+        phone_number: normalizePhoneInput(data.phone_number),
         password: data.password,
       };
       await api.post("/accounts/register/", payload);

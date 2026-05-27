@@ -12,6 +12,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useDispatch } from "react-redux";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "../../lib/utils";
 import { logout } from "../../redux/userSlice";
 import { ToastProvider } from "./ToastContainer";
@@ -23,6 +24,8 @@ import { Permission } from "../../lib/rbac";
 import ThemeToggle from "../common/ThemeToggle";
 import AdminThemeProvider from "./AdminThemeProvider";
 import { useThemeStore } from "../../stores/useThemeStore";
+import { fetchNotifications, notificationQueryKeys } from "../../services/notificationApi";
+import toast from "react-hot-toast";
 
 export default function AdminLayout() {
   const adminTheme = useThemeStore((s) => s.theme);
@@ -31,6 +34,7 @@ export default function AdminLayout() {
   const [searchQuery, setSearchQuery] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
+  const latestOrderAlertId = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -81,6 +85,27 @@ export default function AdminLayout() {
     if (!searchQuery.trim()) return;
     navigate(`/admin/orders?search=${encodeURIComponent(searchQuery.trim())}`);
   };
+
+  const { data: adminNotifications } = useQuery({
+    queryKey: notificationQueryKeys.all,
+    queryFn: () => fetchNotifications(20),
+    refetchInterval: 10_000,
+    staleTime: 5_000,
+  });
+
+  useEffect(() => {
+    const items = adminNotifications?.results || [];
+    const newest = items.find(
+      (n) =>
+        !n.is_read &&
+        n.notification_type === "system" &&
+        n.metadata?.event === "order_created",
+    );
+    if (!newest) return;
+    if (latestOrderAlertId.current === newest.id) return;
+    latestOrderAlertId.current = newest.id;
+    toast.success(newest.message || "New order placed.");
+  }, [adminNotifications]);
 
   return (
     <AdminThemeProvider>

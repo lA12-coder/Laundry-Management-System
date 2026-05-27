@@ -6,6 +6,7 @@ from .views import (
     DashboardMetricsViewSet,
     FinancialTransactionViewSet,
     OrderManagementViewSet,
+    PartnerSettlementViewSet,
     PriceListViewSet,
 )
 
@@ -13,6 +14,7 @@ router = DefaultRouter()
 router.register(r'dashboard-metrics', DashboardMetricsViewSet, basename="admin-dashboard")
 router.register(r'orders', OrderManagementViewSet, basename="admin-order-management")
 router.register(r'transactions', FinancialTransactionViewSet, basename="admin-transactions")
+router.register(r'partner-settlements', PartnerSettlementViewSet, basename="admin-partner-settlements")
 router.register(r'audit-logs', AdminActionLogViewSet, basename="admin-audit-logs")
 router.register(r'price-list', PriceListViewSet, basename="pricelist")
 router.register(r'price-categories', ClothCategoryViewSet, basename="cloth-category")

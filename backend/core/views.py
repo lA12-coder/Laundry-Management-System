@@ -23,10 +23,18 @@ def api_root(request, format=None):
             "products": reverse("product-list", request=request, format=format),
             "partners": reverse("partner-list", request=request, format=format),
         },
+        "partner": {
+            "orders": reverse("partner-order-list", request=request, format=format),
+            "analytics": reverse("partner-order-analytics", request=request, format=format),
+            "ledger": reverse("partner-order-ledger", request=request, format=format),
+        },
         "admin": {
             "dashboard_metrics": reverse("admin-dashboard-list", request=request, format=format),
             "orders": reverse("admin-order-management-list", request=request, format=format),
             "transactions": reverse("admin-transactions-list", request=request, format=format),
+            "partner_settlements": reverse(
+                "admin-partner-settlements-list", request=request, format=format
+            ),
             "audit_logs": reverse("admin-audit-logs-list", request=request, format=format),
             "price_list": reverse("admin-pricelist-list", request=request, format=format),
             "products": reverse("admin-products-list", request=request, format=format),

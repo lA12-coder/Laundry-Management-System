@@ -88,7 +88,10 @@ export function invalidatePricingQueries(queryClient) {
 
 export async function fetchAdminPriceList() {
   const { data } = await api.get("/admin/price-list/");
-  return unwrap(data);
+  const entries = unwrap(data);
+  return Array.isArray(entries)
+    ? entries.filter((entry) => entry?.is_active !== false)
+    : [];
 }
 
 export async function createPriceListEntry(payload) {

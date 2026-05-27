@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/auth/AuthLayout";
 import LaundryLoader from "../components/common/LaundryLoader";
 import { useSelector } from "react-redux";
+import { isValidPhoneInput, normalizePhoneInput } from "../lib/phone";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const SignupPage = () => {
       await registerUser({
         full_name: data.full_name,
         email: data.email,
-        phone_number: data.phone_number,
+        phone_number: normalizePhoneInput(data.phone_number),
         password: data.password,
       });
       navigate("/login", {
@@ -83,13 +84,17 @@ const SignupPage = () => {
                   Phone
                 </label>
                 <input
-                  {...register("phone_number", { required: "Phone is required" })}
+                  {...register("phone_number", {
+                    required: "Phone is required",
+                    validate: (value) =>
+                      isValidPhoneInput(value) || "Use 09XXXXXXXX or +2519XXXXXXXX",
+                  })}
                   className={`w-full p-4 bg-gray-50 border rounded-xl outline-none transition-all ${
                     errors.phone_number
                       ? "border-red-400"
                       : "border-transparent focus:border-[#4c84a4]"
                   }`}
-                  placeholder="+251..."
+                  placeholder="09XXXXXXXX or +2519XXXXXXXX"
                 />
                 {errors.phone_number && (
                   <span className="text-red-500 text-[10px] font-bold">

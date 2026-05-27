@@ -1,8 +1,10 @@
 import React from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import heroImg from "../../assets/img/HeroImg.png";
 
 const Hero = () => {
+  const navigate = useNavigate();
   // Parallax effect: The background moves slightly slower than the scroll
   const { scrollY } = useScroll();
   const yBg = useTransform(scrollY, [0, 500], [0, 100]);
@@ -79,11 +81,17 @@ const Hero = () => {
           variants={itemVariants}
           className="mt-12 flex flex-col sm:flex-row gap-5 items-center"
         >
-          <button className="px-10 py-4 bg-[#FD9837] hover:bg-orange-500 text-gray-900 font-black rounded-full transition-all duration-300 transform shadow-xl hover:scale-105 active:scale-95">
+          <button
+            onClick={() => navigate("/item-list")}
+            className="px-10 py-4 bg-[#FD9837] hover:bg-orange-500 text-gray-900 font-black rounded-full transition-all duration-300 transform shadow-xl hover:scale-105 active:scale-95"
+          >
             Schedule your pickup
           </button>
 
-          <button className="px-10 py-4 bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white hover:text-[#4081a2] text-white font-bold rounded-full transition-all duration-300 hover:scale-105 active:scale-95">
+          <button
+            onClick={() => navigate("/services")}
+            className="px-10 py-4 bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white hover:text-[#4081a2] text-white font-bold rounded-full transition-all duration-300 hover:scale-105 active:scale-95"
+          >
             View Services
           </button>
         </motion.div>

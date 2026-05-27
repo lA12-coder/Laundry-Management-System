@@ -12,6 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
+from django.db.utils import OperationalError, ProgrammingError
 from .signals import send_verification_email
 
 User = get_user_model()
@@ -482,22 +483,35 @@ class CustomerNotificationListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
-        limit = min(int(request.query_params.get("limit", 50)), 100)
-        queryset = CustomerNotification.objects.filter(user=request.user).order_by(
-            "-created_at"
-        )[:limit]
-        unread_count = CustomerNotification.objects.filter(
-            user=request.user,
-            is_read=False,
-        ).count()
-        serializer = CustomerNotificationSerializer(queryset, many=True)
+        try:
+            limit = min(int(request.query_params.get("limit", 50)), 100)
+        except (TypeError, ValueError):
+            limit = 50
+
+        try:
+            queryset = CustomerNotification.objects.filter(user=request.user).order_by(
+                "-created_at"
+            )[:limit]
+            unread_count = CustomerNotification.objects.filter(
+                user=request.user,
+                is_read=False,
+            ).count()
+            serializer = CustomerNotificationSerializer(queryset, many=True)
+            payload = {
+                "results": serializer.data,
+                "unread_count": unread_count,
+            }
+        except (ProgrammingError, OperationalError):
+            logger.exception("Customer notifications table unavailable.")
+            payload = {
+                "results": [],
+                "unread_count": 0,
+            }
+
         return json_response(
             status_text="success",
             message="Notifications fetched successfully.",
-            data={
-                "results": serializer.data,
-                "unread_count": unread_count,
-            },
+            data=payload,
             http_status=status.HTTP_200_OK,
         )
 
@@ -518,14 +532,20 @@ class CustomerNotificationReadView(APIView):
             )
 
         ids = serializer.validated_data.get("ids") or []
-        queryset = CustomerNotification.objects.filter(user=request.user, is_read=False)
-        if ids:
-            queryset = queryset.filter(pk__in=ids)
-        updated = queryset.update(is_read=True)
-        unread_count = CustomerNotification.objects.filter(
-            user=request.user,
-            is_read=False,
-        ).count()
+        try:
+            queryset = CustomerNotification.objects.filter(user=request.user, is_read=False)
+            if ids:
+                queryset = queryset.filter(pk__in=ids)
+            updated = queryset.update(is_read=True)
+            unread_count = CustomerNotification.objects.filter(
+                user=request.user,
+                is_read=False,
+            ).count()
+        except (ProgrammingError, OperationalError):
+            logger.exception("Customer notifications table unavailable for mark-read.")
+            updated = 0
+            unread_count = 0
+
         return json_response(
             status_text="success",
             message="Notifications marked as read.",

@@ -26,6 +26,12 @@ class RiderJobSerializer(serializers.ModelSerializer):
     can_accept = serializers.SerializerMethodField()
     approximate_distance_km = serializers.SerializerMethodField()
     cloth_items_count = serializers.SerializerMethodField()
+    pickup_latitude = serializers.DecimalField(max_digits=9, decimal_places=6, read_only=True)
+    pickup_longitude = serializers.DecimalField(max_digits=9, decimal_places=6, read_only=True)
+    rider_last_latitude = serializers.DecimalField(max_digits=9, decimal_places=6, read_only=True)
+    rider_last_longitude = serializers.DecimalField(max_digits=9, decimal_places=6, read_only=True)
+    rider_delivered_confirmed_at = serializers.DateTimeField(read_only=True)
+    customer_received_confirmed_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Order
@@ -46,6 +52,12 @@ class RiderJobSerializer(serializers.ModelSerializer):
             "total_amount",
             "created_at",
             "rider_accepted_at",
+            "pickup_latitude",
+            "pickup_longitude",
+            "rider_last_latitude",
+            "rider_last_longitude",
+            "rider_delivered_confirmed_at",
+            "customer_received_confirmed_at",
         ]
 
     def _rider_user(self):

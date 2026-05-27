@@ -5,7 +5,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { Permission } from "../../lib/rbac";
 import { useToast } from "../../components/admin/ToastContainer";
 import LedgerSummary from "../../components/admin/financial/LedgerSummary";
-import TransactionLogTable from "../../components/admin/financial/TransactionLogTable";
+import FinancialLedger from "../../components/admin/financial/FinancialLedger";
+import PartnerSettlement from "../../components/admin/financial/PartnerSettlement";
 import {
   buildTransactionLogCsv,
   downloadCsvFile,
@@ -125,7 +126,8 @@ export default function FinancialManagement() {
       </div>
 
       <LedgerSummary filterParams={filterParams} />
-      <TransactionLogTable filterParams={filterParams} />
+      <FinancialLedger filterParams={filterParams} />
+      <PartnerSettlement />
     </div>
   );
 }

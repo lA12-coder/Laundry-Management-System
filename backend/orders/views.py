@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import timedelta
 
 from django.db import transaction
 from django.db.models import Count, Q, Sum, Value, DecimalField, F
@@ -9,18 +10,30 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 
-from core.permissions import IsStaffAdminRole
+from core.permissions import IsStaffAdminRole, IsPartnerRole
 from partners.models import LaundryPartner
-from .models import Order, TransactionLog, AdminActionLog, PriceList, ClothCategory
+from .models import (
+    Order,
+    TransactionLog,
+    AdminActionLog,
+    PriceList,
+    ClothCategory,
+    RiderReview,
+)
 from .pagination import AdminOrderPagination
 from .serializers import (
     OrderListSerializer,
     OrderStatusOverrideSerializer,
     OrderReassignRiderSerializer,
+    OrderAssignPartnerSerializer,
+    PartnerOrderStatusUpdateSerializer,
+    PartnerSettlementClearSerializer,
+    CustomerReceiveConfirmationSerializer,
     TransactionLogSerializer,
     LedgerSummarySerializer,
     AdminActionLogSerializer,
@@ -32,6 +45,7 @@ from .serializers import (
 from core.models import SystemConfiguration
 from .services import calculate_order_price, build_cloth_items, assign_least_loaded_rider
 from .dashboard_analytics import build_dashboard_payload
+from accounts.utils import normalize_phone_number
 
 User = get_user_model()
 
@@ -54,11 +68,17 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Optimize for the current user's role
         user = self.request.user
+        base_qs = Order.objects.select_related(
+            "customer",
+            "partner",
+            "rider",
+            "rider_review",
+        ).prefetch_related("cloth_items")
         if user.role == User.Role.ADMIN:
-            return Order.objects.all()
+            return base_qs.all()
         elif user.role == User.Role.RIDER:
-            return Order.objects.filter(rider=user)
-        return Order.objects.filter(customer=user)
+            return base_qs.filter(rider=user)
+        return base_qs.filter(customer=user)
 
     def create(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -77,6 +97,13 @@ class OrderViewSet(viewsets.ModelViewSet):
                 {"error": "Customer phone number is required."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+        try:
+            customer_phone = normalize_phone_number(customer_phone)
+        except ValidationError as exc:
+            return Response(
+                {"error": str(exc.detail[0] if isinstance(exc.detail, list) else exc.detail)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         config = SystemConfiguration.load()
         if config.max_daily_orders_cap:
@@ -89,21 +116,30 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
 
         with transaction.atomic():
-            # Automatically create or retrieve the user based on phone number
-            customer_user, created = User.objects.get_or_create(
-                phone_number=customer_phone,
-                defaults={
-                    'full_name': customer_name,
-                    'username': customer_phone,
-                    'role': User.Role.CUSTOMER,
-                    'is_active': False,
-                    'home_address': customer_address,
-                }
+            # Reuse an existing customer by normalized phone (handles legacy duplicates safely).
+            customer_user = (
+                User.objects.filter(
+                    phone_number=customer_phone,
+                    role=User.Role.CUSTOMER,
+                )
+                .order_by("-is_active", "-is_verified", "-created_at")
+                .first()
             )
 
-            if created:
+            if customer_user is None:
+                customer_user = User.objects.create(
+                    phone_number=customer_phone,
+                    username=customer_phone,
+                    full_name=customer_name,
+                    role=User.Role.CUSTOMER,
+                    is_active=False,
+                    home_address=customer_address,
+                )
                 customer_user.set_unusable_password()
                 customer_user.save()
+            elif customer_address and not customer_user.home_address:
+                customer_user.home_address = customer_address
+                customer_user.save(update_fields=["home_address"])
 
             data['customer'] = customer_user.pk
 
@@ -141,6 +177,51 @@ class OrderViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    @action(detail=True, methods=["post"], url_path="mark-received")
+    def mark_received(self, request, pk=None):
+        order = self.get_object()
+        if order.customer_id != request.user.id:
+            return Response(
+                {"detail": "You can only confirm receipt for your own orders."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = CustomerReceiveConfirmationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        order.customer_received_confirmed_at = timezone.now()
+        if order.rider_delivered_confirmed_at:
+            order.status = Order.Status.DELIVERED
+            order.delivered_at = timezone.now()
+            order.save(
+                update_fields=[
+                    "customer_received_confirmed_at",
+                    "status",
+                    "delivered_at",
+                ]
+            )
+        else:
+            if order.status not in [Order.Status.OUT_FOR_DELIVERY, Order.Status.DELIVERED]:
+                order.status = Order.Status.OUT_FOR_DELIVERY
+                order.save(
+                    update_fields=["customer_received_confirmed_at", "status"]
+                )
+            else:
+                order.save(update_fields=["customer_received_confirmed_at"])
+
+        review_defaults = {
+            "rating": serializer.validated_data["rating"],
+            "comment": serializer.validated_data.get("comment", "").strip(),
+            "rider_id": order.rider_id,
+            "customer_id": request.user.id,
+        }
+        if order.rider_id:
+            RiderReview.objects.update_or_create(
+                order=order,
+                defaults=review_defaults,
+            )
+
+        return Response(OrderListSerializer(order, context={"request": request}).data)
+
 
 class OrderManagementViewSet(viewsets.ModelViewSet):
     """
@@ -166,7 +247,7 @@ class OrderManagementViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = (
-            Order.objects.select_related("customer", "partner", "rider")
+            Order.objects.select_related("customer", "partner", "rider", "rider_review")
             .prefetch_related("cloth_items", "admin_action_logs")
         )
 
@@ -224,6 +305,8 @@ class OrderManagementViewSet(viewsets.ModelViewSet):
             Order.Status.PENDING,
             Order.Status.PICKED_UP,
             Order.Status.WASHING,
+            Order.Status.WASHED,
+            Order.Status.DRIED,
             Order.Status.READY,
             Order.Status.OUT_FOR_DELIVERY,
         ]
@@ -273,6 +356,12 @@ class OrderManagementViewSet(viewsets.ModelViewSet):
         # Track timeline updates
         update_fields = ["status"]
         if order.status == Order.Status.DELIVERED:
+            if not order.customer_received_confirmed_at:
+                order.customer_received_confirmed_at = timezone.now()
+                update_fields.append("customer_received_confirmed_at")
+            if not order.rider_delivered_confirmed_at:
+                order.rider_delivered_confirmed_at = timezone.now()
+                update_fields.append("rider_delivered_confirmed_at")
             order.delivered_at = timezone.now()
             update_fields.append("delivered_at")
 
@@ -307,6 +396,31 @@ class OrderManagementViewSet(viewsets.ModelViewSet):
         )
         return Response(OrderListSerializer(order).data)
 
+    @action(methods=["patch"], detail=True, url_path="assign-partner")
+    def assign_partner(self, request, pk=None):
+        """
+        Manually bind an order to an existing laundry partner.
+        Inline partner creation is intentionally not supported.
+        """
+        order = self.get_object()
+        serializer = OrderAssignPartnerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        partner = serializer.validated_data["partner"]
+        previous_partner = str(order.partner_id or "")
+        order.partner = partner
+        order.save(update_fields=["partner"])
+
+        AdminActionLog.objects.create(
+            admin_user=request.user,
+            order=order,
+            action=AdminActionLog.Action.ASSIGN_PARTNER,
+            previous_value=previous_partner,
+            new_value=str(partner.pk),
+            metadata={"partner_name": partner.business_name},
+        )
+        return Response(OrderListSerializer(order).data)
+
 
 class DashboardMetricsViewSet(viewsets.ViewSet):
     """
@@ -327,7 +441,25 @@ class FinancialTransactionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet
     queryset = TransactionLog.objects.select_related("order", "order__partner").all()
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = (
+            super()
+            .get_queryset()
+            .select_related("order", "order__partner")
+            .only(
+                "id",
+                "created_at",
+                "fualaundry_commission",
+                "rider_fee",
+                "partner_earning",
+                "settlement_status",
+                "paid_amount",
+                "payment_date",
+                "order__id",
+                "order__total_amount",
+                "order__status",
+                "order__partner__business_name",
+            )
+        )
         date_from = _parse_query_date(self.request.query_params.get("date_from"))
         date_to = _parse_query_date(self.request.query_params.get("date_to"))
         if date_from:
@@ -396,7 +528,349 @@ class FinancialTransactionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet
 class AdminActionLogViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = AdminActionLogSerializer
     permission_classes = [IsStaffAdminRole]
-    queryset = AdminActionLog.objects.select_related("admin_user", "order").all()
+    pagination_class = AdminOrderPagination
+
+    def get_queryset(self):
+        qs = (
+            AdminActionLog.objects.select_related("admin_user", "order")
+            .only(
+                "id",
+                "action",
+                "previous_value",
+                "new_value",
+                "metadata",
+                "created_at",
+                "admin_user__email",
+                "order__id",
+            )
+            .order_by("-created_at")
+        )
+        action = (self.request.query_params.get("action") or "").strip()
+        if action:
+            qs = qs.filter(action=action)
+
+        search = (self.request.query_params.get("search") or "").strip()
+        if search:
+            if search.isdigit():
+                qs = qs.filter(order_id=int(search))
+            else:
+                qs = qs.filter(
+                    Q(admin_user__email__icontains=search)
+                    | Q(previous_value__icontains=search)
+                    | Q(new_value__icontains=search)
+                )
+        return qs
+
+
+class PartnerOrderViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    """
+    Partner workspace API:
+    - list/retrieve only orders assigned to the authenticated partner profile
+    - update status only through WASHING -> WASHED -> DRIED pipeline
+    """
+
+    serializer_class = OrderListSerializer
+    permission_classes = [IsPartnerRole]
+
+    ACTIVE_STATUSES = [
+        Order.Status.PENDING,
+        Order.Status.PICKED_UP,
+        Order.Status.WASHING,
+        Order.Status.WASHED,
+        Order.Status.DRIED,
+        Order.Status.READY,
+        Order.Status.OUT_FOR_DELIVERY,
+    ]
+
+    def _get_partner_profile(self):
+        return getattr(self.request.user, "partner_profile", None)
+
+    def get_queryset(self):
+        partner = self._get_partner_profile()
+        if not partner:
+            return Order.objects.none()
+        queryset = (
+            Order.objects.select_related("customer", "partner", "rider", "rider_review")
+            .prefetch_related("cloth_items")
+            .filter(partner_id=partner.pk)
+            .order_by("-created_at")
+        )
+        status_param = self.request.query_params.get("status")
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        return queryset
+
+    @action(detail=True, methods=["patch"], url_path="update-status")
+    def update_status(self, request, pk=None):
+        order = self.get_object()
+        serializer = PartnerOrderStatusUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        next_status = serializer.validated_data["status"]
+        current_status = order.status
+
+        # Partner processing lane: allow entering washing, then enforce strict sequence.
+        if next_status == Order.Status.WASHING:
+            if current_status not in [
+                Order.Status.PENDING,
+                Order.Status.PICKED_UP,
+                Order.Status.READY,
+                Order.Status.WASHING,
+            ]:
+                raise ValidationError({"status": "Cannot move this order back to washing."})
+        elif current_status == Order.Status.WASHING and next_status == Order.Status.WASHED:
+            pass
+        elif current_status == Order.Status.WASHED and next_status == Order.Status.DRIED:
+            pass
+        else:
+            raise ValidationError(
+                {
+                    "status": (
+                        "Partner status transition must follow: "
+                        "WASHING -> WASHED -> DRIED."
+                    )
+                }
+            )
+
+        order.status = next_status
+        order.save(update_fields=["status"])
+        return Response(OrderListSerializer(order).data)
+
+    @action(detail=False, methods=["get"], url_path="analytics")
+    def analytics(self, request):
+        partner = self._get_partner_profile()
+        if not partner:
+            return Response(
+                {
+                    "partner": None,
+                    "week_revenue": "0.00",
+                    "month_revenue": "0.00",
+                    "total_net_earnings": "0.00",
+                    "paid_balance": "0.00",
+                    "outstanding_debt": "0.00",
+                }
+            )
+
+        now = timezone.now()
+        week_start = now - timedelta(days=now.weekday())
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        logs = TransactionLog.objects.filter(order__partner_id=partner.pk).select_related("order")
+
+        week_revenue = logs.filter(created_at__gte=week_start).aggregate(
+            total=Coalesce(
+                Sum("partner_earning"),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            )
+        )["total"]
+        month_revenue = logs.filter(created_at__gte=month_start).aggregate(
+            total=Coalesce(
+                Sum("partner_earning"),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            )
+        )["total"]
+
+        totals = logs.aggregate(
+            total_net_earnings=Coalesce(
+                Sum("partner_earning"),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            ),
+            paid_balance=Coalesce(
+                Sum(
+                    "paid_amount",
+                    filter=Q(settlement_status=TransactionLog.SettlementStatus.PAID),
+                ),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            ),
+            outstanding_debt=Coalesce(
+                Sum(
+                    "partner_earning",
+                    filter=Q(settlement_status=TransactionLog.SettlementStatus.UNPAID),
+                ),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            ),
+        )
+        return Response(
+            {
+                "partner": {
+                    "id": partner.pk,
+                    "business_name": partner.business_name,
+                },
+                "week_revenue": week_revenue,
+                "month_revenue": month_revenue,
+                **totals,
+            }
+        )
+
+    @action(detail=False, methods=["get"], url_path="ledger")
+    def ledger(self, request):
+        partner = self._get_partner_profile()
+        if not partner:
+            return Response({"results": [], "summary": {"paid": "0.00", "unpaid": "0.00"}})
+
+        logs = (
+            TransactionLog.objects.select_related("order")
+            .filter(order__partner_id=partner.pk)
+            .order_by("-created_at")
+        )
+        rows = TransactionLogSerializer(logs, many=True).data
+        summary = logs.aggregate(
+            paid=Coalesce(
+                Sum(
+                    "paid_amount",
+                    filter=Q(settlement_status=TransactionLog.SettlementStatus.PAID),
+                ),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            ),
+            unpaid=Coalesce(
+                Sum(
+                    "partner_earning",
+                    filter=Q(settlement_status=TransactionLog.SettlementStatus.UNPAID),
+                ),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            ),
+        )
+        return Response({"results": rows, "summary": summary})
+
+
+class PartnerSettlementViewSet(viewsets.ViewSet):
+    """
+    Admin settlement engine for clearing partner outstanding balances.
+    """
+
+    permission_classes = [IsStaffAdminRole]
+
+    def list(self, request):
+        partner_id = request.query_params.get("partner_id")
+        partners_qs = LaundryPartner.objects.filter(is_active=True).order_by("business_name")
+        if not partner_id:
+            snapshots = []
+            for partner in partners_qs:
+                outstanding = (
+                    TransactionLog.objects.filter(
+                        order__partner_id=partner.pk,
+                        settlement_status=TransactionLog.SettlementStatus.UNPAID,
+                    ).aggregate(
+                        total=Coalesce(
+                            Sum("partner_earning"),
+                            Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+                        )
+                    )["total"]
+                )
+                snapshots.append(
+                    {
+                        "id": partner.pk,
+                        "business_name": partner.business_name,
+                        "outstanding_debt": outstanding,
+                    }
+                )
+            return Response({"partners": snapshots})
+
+        try:
+            partner = partners_qs.get(pk=partner_id)
+        except LaundryPartner.DoesNotExist:
+            raise ValidationError({"partner_id": "Partner not found."})
+
+        unpaid_qs = (
+            TransactionLog.objects.select_related("order")
+            .filter(
+                order__partner_id=partner.pk,
+                settlement_status=TransactionLog.SettlementStatus.UNPAID,
+            )
+            .order_by("created_at")
+        )
+        unpaid_rows = TransactionLogSerializer(unpaid_qs, many=True).data
+        total_due = unpaid_qs.aggregate(
+            total=Coalesce(
+                Sum("partner_earning"),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            )
+        )["total"]
+        return Response(
+            {
+                "partner": {"id": partner.pk, "business_name": partner.business_name},
+                "unpaid_orders": unpaid_rows,
+                "total_due": total_due,
+            }
+        )
+
+    def create(self, request):
+        serializer = PartnerSettlementClearSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        partner = serializer.validated_data["partner"]
+
+        with transaction.atomic():
+            unpaid_qs = TransactionLog.objects.select_for_update().filter(
+                order__partner_id=partner.pk,
+                settlement_status=TransactionLog.SettlementStatus.UNPAID,
+            )
+            if not unpaid_qs.exists():
+                return Response(
+                    {
+                        "updated_count": 0,
+                        "paid_amount": Decimal("0.00"),
+                        "payment_date": timezone.now(),
+                    }
+                )
+
+            total_due = unpaid_qs.aggregate(
+                total=Coalesce(
+                    Sum("partner_earning"),
+                    Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+                )
+            )["total"]
+            payment_date = timezone.now()
+            updated_count = unpaid_qs.update(
+                settlement_status=TransactionLog.SettlementStatus.PAID,
+                paid_amount=F("partner_earning"),
+                payment_date=payment_date,
+            )
+
+            AdminActionLog.objects.create(
+                admin_user=request.user,
+                action=AdminActionLog.Action.PARTNER_SETTLEMENT,
+                previous_value="UNPAID",
+                new_value="PAID",
+                metadata={
+                    "partner_id": partner.pk,
+                    "partner_name": partner.business_name,
+                    "paid_amount": str(total_due),
+                    "updated_count": updated_count,
+                    "payment_date": payment_date.isoformat(),
+                },
+            )
+
+        return Response(
+            {
+                "updated_count": updated_count,
+                "paid_amount": total_due,
+                "payment_date": payment_date,
+            }
+        )
+
+    @action(detail=False, methods=["get"], url_path="ledger")
+    def ledger(self, request):
+        partner_id = request.query_params.get("partner_id")
+        logs = TransactionLog.objects.select_related("order", "order__partner").order_by("-created_at")
+        if partner_id:
+            logs = logs.filter(order__partner_id=partner_id)
+        rows = TransactionLogSerializer(logs, many=True).data
+        summary = logs.aggregate(
+            paid=Coalesce(
+                Sum(
+                    "paid_amount",
+                    filter=Q(settlement_status=TransactionLog.SettlementStatus.PAID),
+                ),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            ),
+            unpaid=Coalesce(
+                Sum(
+                    "partner_earning",
+                    filter=Q(settlement_status=TransactionLog.SettlementStatus.UNPAID),
+                ),
+                Value(0, output_field=DecimalField(max_digits=14, decimal_places=2)),
+            ),
+        )
+        return Response({"results": rows, "summary": summary})
 
 
 class ClothCategoryViewSet(viewsets.ModelViewSet):

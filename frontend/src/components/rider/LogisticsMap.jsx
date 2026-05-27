@@ -29,6 +29,41 @@ async function geocodeAddress(maps, address) {
   });
 }
 
+async function getMapsConstructors(maps) {
+  if (typeof maps.Map === "function") {
+    return {
+      MapCtor: maps.Map,
+      MarkerCtor: maps.Marker,
+      GeocoderCtor: maps.Geocoder,
+      DirectionsServiceCtor: maps.DirectionsService,
+      DirectionsRendererCtor: maps.DirectionsRenderer,
+      SymbolPath: maps.SymbolPath,
+      TravelMode: maps.TravelMode,
+    };
+  }
+
+  if (typeof maps.importLibrary === "function") {
+    const mapsLib = await maps.importLibrary("maps");
+    const markerLib = await maps.importLibrary("marker").catch(() => ({}));
+    const routesLib = await maps.importLibrary("routes").catch(() => ({}));
+    const geocodingLib = await maps.importLibrary("geocoding").catch(() => ({}));
+
+    return {
+      MapCtor: mapsLib.Map,
+      MarkerCtor: markerLib.Marker || maps.Marker || mapsLib.Marker || null,
+      GeocoderCtor: geocodingLib.Geocoder || maps.Geocoder || mapsLib.Geocoder || null,
+      DirectionsServiceCtor:
+        routesLib.DirectionsService || maps.DirectionsService || mapsLib.DirectionsService || null,
+      DirectionsRendererCtor:
+        routesLib.DirectionsRenderer || maps.DirectionsRenderer || mapsLib.DirectionsRenderer || null,
+      SymbolPath: maps.SymbolPath,
+      TravelMode: maps.TravelMode,
+    };
+  }
+
+  throw new Error("Google Maps constructors are unavailable. Check API key restrictions.");
+}
+
 /**
  * Google Maps route engine — partner hub → customer (after privacy unlock).
  */
@@ -81,15 +116,30 @@ export default function LogisticsMap({
         const maps = await loadGoogleMaps();
         if (cancelled || !mapRef.current) return;
 
+        const constructors = await getMapsConstructors(maps);
+        const {
+          MapCtor,
+          MarkerCtor,
+          GeocoderCtor,
+          DirectionsServiceCtor,
+          DirectionsRendererCtor,
+          SymbolPath,
+          TravelMode,
+        } = constructors;
+
+        if (!MapCtor || !GeocoderCtor || !DirectionsServiceCtor || !DirectionsRendererCtor) {
+          throw new Error("Google Maps libraries are incomplete. Enable Maps JavaScript and Directions APIs.");
+        }
+
         if (!mapInstance.current) {
-          mapInstance.current = new maps.Map(mapRef.current, {
+          mapInstance.current = new MapCtor(mapRef.current, {
             center: DEFAULT_CENTER,
             zoom: 13,
             mapTypeControl: false,
             streetViewControl: false,
             fullscreenControl: true,
           });
-          directionsRenderer.current = new maps.DirectionsRenderer({
+          directionsRenderer.current = new DirectionsRendererCtor({
             suppressMarkers: false,
             polylineOptions: {
               strokeColor: "#34d399",
@@ -100,10 +150,26 @@ export default function LogisticsMap({
           directionsRenderer.current.setMap(mapInstance.current);
         }
 
+        // Rebind geocoder helper to whichever API flavor is available.
+        const geocodeWithCtor = async (address) => {
+          if (!address?.trim()) return null;
+          const geocoder = new GeocoderCtor();
+          return new Promise((resolve) => {
+            geocoder.geocode({ address }, (results, status) => {
+              if (status === "OK" && results?.[0]?.geometry?.location) {
+                const loc = results[0].geometry.location;
+                resolve({ lat: loc.lat(), lng: loc.lng() });
+              } else {
+                resolve(null);
+              }
+            });
+          });
+        };
+
         const hubLatLng = hubQuery
-          ? await geocodeAddress(maps, hubQuery)
+          ? await geocodeWithCtor(hubQuery)
           : null;
-        const customerLatLng = await geocodeAddress(maps, customerQuery);
+        const customerLatLng = await geocodeWithCtor(customerQuery);
 
         if (cancelled) return;
 
@@ -122,22 +188,24 @@ export default function LogisticsMap({
         if (!hubLatLng && !riderCoords) {
           mapInstance.current.setCenter(customerLatLng);
           mapInstance.current.setZoom(14);
-          new maps.Marker({
-            map: mapInstance.current,
-            position: customerLatLng,
-            title: "Customer drop-off",
-          });
+          if (MarkerCtor) {
+            new MarkerCtor({
+              map: mapInstance.current,
+              position: customerLatLng,
+              title: "Customer drop-off",
+            });
+          }
           setMapState("ready");
           setMapMessage("Partner hub location missing — showing customer pin only.");
           return;
         }
 
-        const directionsService = new maps.DirectionsService();
+        const directionsService = new DirectionsServiceCtor();
         directionsService.route(
           {
             origin,
             destination,
-            travelMode: maps.TravelMode.DRIVING,
+            travelMode: TravelMode?.DRIVING || "DRIVING",
           },
           (result, status) => {
             if (cancelled) return;
@@ -150,26 +218,28 @@ export default function LogisticsMap({
               setMapMessage("Driving route unavailable. Showing marker fallback.");
               mapInstance.current.setCenter(customerLatLng);
               mapInstance.current.setZoom(14);
-              if (hubLatLng) {
-                new maps.Marker({
+              if (hubLatLng && MarkerCtor) {
+                new MarkerCtor({
                   map: mapInstance.current,
                   position: hubLatLng,
                   title: partnerHub?.business_name || "Partner hub",
                   icon: {
-                    path: maps.SymbolPath.CIRCLE,
+                    path: SymbolPath?.CIRCLE,
                     scale: 8,
-                    fillColor: "#4c84a4",
+                    fillColor: "#10b981",
                     fillOpacity: 1,
                     strokeWeight: 2,
                     strokeColor: "#fff",
                   },
                 });
               }
-              new maps.Marker({
-                map: mapInstance.current,
-                position: customerLatLng,
-                title: "Customer",
-              });
+              if (MarkerCtor) {
+                new MarkerCtor({
+                  map: mapInstance.current,
+                  position: customerLatLng,
+                  title: "Customer",
+                });
+              }
             }
           },
         );
@@ -187,21 +257,15 @@ export default function LogisticsMap({
     };
   }, [accepted, customerQuery, hubQuery, job?.id, riderCoords, job?.delivery_region]);
 
-  if (mapState === "loading") {
-    return (
-      <div className={className}>
-        <RiderMapSkeleton />
-      </div>
-    );
-  }
-
-  const showMapCanvas = ["ready", "route_fail", "geocode_fail"].includes(mapState);
+  const showMapCanvas = ["loading", "ready", "route_fail", "geocode_fail"].includes(
+    mapState,
+  );
 
   return (
     <div
-      className={`rounded-2xl border border-white/10 overflow-hidden bg-slate-900/50 ${className}`}
+      className={`rounded-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900 ${className}`}
     >
-      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between gap-2">
+      <div className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-emerald-400">
           <MapIcon size={16} />
           <span className="text-xs font-bold uppercase tracking-wider">
@@ -209,7 +273,7 @@ export default function LogisticsMap({
           </span>
         </div>
         {accepted && partnerHub && (
-          <div className="flex items-center gap-3 text-[10px] text-slate-400">
+          <div className="flex items-center gap-3 text-[10px] text-slate-500 dark:text-slate-400">
             <span className="inline-flex items-center gap-1">
               <Store size={12} /> Hub
             </span>
@@ -222,8 +286,8 @@ export default function LogisticsMap({
 
       {mapState === "locked" && (
         <div className="p-6 flex flex-col items-center text-center gap-3 min-h-[220px] justify-center">
-          <Navigation className="w-10 h-10 text-slate-500" />
-          <p className="text-sm text-slate-400 max-w-xs">{mapMessage}</p>
+          <Navigation className="w-10 h-10 text-slate-500 dark:text-slate-500" />
+          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-xs">{mapMessage}</p>
         </div>
       )}
 
@@ -232,15 +296,25 @@ export default function LogisticsMap({
         mapState === "error") && (
         <div className="p-6 flex flex-col items-center text-center gap-3 min-h-[220px] justify-center">
           <AlertTriangle className="w-10 h-10 text-amber-400" />
-          <p className="text-sm text-slate-300 max-w-xs">{mapMessage}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 max-w-xs">{mapMessage}</p>
         </div>
       )}
 
       {showMapCanvas && (
         <>
-          <div ref={mapRef} className="w-full h-[280px] sm:h-[320px]" />
+          <div className="relative w-full h-[280px] sm:h-[320px]">
+            <div
+              ref={mapRef}
+              className={`w-full h-full ${mapState === "loading" ? "opacity-0" : "opacity-100"}`}
+            />
+            {mapState === "loading" && (
+              <div className="absolute inset-0">
+                <RiderMapSkeleton />
+              </div>
+            )}
+          </div>
           {mapMessage && (
-            <p className="px-4 py-2 text-xs text-amber-200/90 bg-amber-500/10 border-t border-amber-500/20">
+            <p className="px-4 py-2 text-xs text-amber-800 dark:text-amber-200/90 bg-amber-50 dark:bg-amber-500/10 border-t border-amber-200 dark:border-amber-500/20">
               {mapMessage}
             </p>
           )}

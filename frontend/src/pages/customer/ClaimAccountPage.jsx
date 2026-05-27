@@ -42,9 +42,14 @@ export default function ClaimAccountPage() {
       setSessionReady(true);
       return;
     }
-    const normalized = normalizePhoneInput(raw);
-    setPhone(normalized);
-    ghostMutation.mutate(normalized);
+    try {
+      const normalized = normalizePhoneInput(raw);
+      setPhone(normalized);
+      ghostMutation.mutate(normalized);
+    } catch {
+      setPhone(raw);
+      setSessionReady(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

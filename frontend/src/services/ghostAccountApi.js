@@ -1,4 +1,5 @@
 import api from "../API/axios";
+import { normalizePhoneInput as normalizePhone } from "../lib/phone";
 
 export const ghostAccountQueryKeys = {
   me: ["auth", "me"],
@@ -16,9 +17,5 @@ export async function claimAccount(payload) {
 
 /** Normalize checkout-style phone input to E.164. */
 export function normalizePhoneInput(raw) {
-  const value = (raw || "").trim();
-  if (!value) return "";
-  if (value.startsWith("+")) return value;
-  if (value.startsWith("0")) return `+251${value.slice(1)}`;
-  return `+251${value}`;
+  return normalizePhone(raw);
 }

@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 import api from "../../API/axios";
 import { updateUser } from "../../redux/userSlice";
 import { useNotificationStore } from "../../stores/notificationStore";
+import { isValidPhoneInput, normalizePhoneInput } from "../../lib/phone";
 
 const inputCls =
   "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-[#4c84a4] focus:bg-white focus:ring-2 focus:ring-[#4c84a4]/20";
@@ -63,10 +64,13 @@ export default function ProfileSettings() {
 
   const profileMutation = useMutation({
     mutationFn: async () => {
+      if (!isValidPhoneInput(form.phone_number)) {
+        throw new Error("Use 09XXXXXXXX or +2519XXXXXXXX");
+      }
       const payload = {
         full_name: form.full_name,
         email: form.email,
-        phone_number: form.phone_number,
+        phone_number: normalizePhoneInput(form.phone_number),
         home_address: form.home_address,
         secondary_addresses: form.secondary_addresses
           .split("\n")

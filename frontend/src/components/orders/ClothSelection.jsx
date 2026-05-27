@@ -2,16 +2,20 @@ import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import { motion } from "framer-motion";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   FaChevronLeft,
   FaChevronRight,
   FaPlus,
   FaMinus,
 } from "react-icons/fa6";
-import { items } from "../../assets/assets";
+import { Shirt } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../../redux/cartSlice";
+import { fetchAdminPriceList, pricingQueryKeys } from "../../services/pricingApi";
+import { formatETB } from "../../lib/currency";
+import { resolveCatalogImageUrl } from "../../lib/mediaUrl";
 
 // Import Swiper styles
 import "swiper/css";
@@ -20,8 +24,13 @@ import "swiper/css/pagination";
 
 const ClothSelection = () => {
   const [quantities, setQuantities] = useState({});
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { data: catalogItems = [] } = useQuery({
+    queryKey: pricingQueryKeys.all,
+    queryFn: fetchAdminPriceList,
+    staleTime: 60_000,
+  });
 
   const updateQuantity = (id, delta) => {
     setQuantities((prev) => ({
@@ -33,10 +42,18 @@ const ClothSelection = () => {
   const handleAddToBasket = (item) => {
     const quantity = quantities[item.id] || 0;
     if (quantity > 0) {
-      dispatch(addToCart({ ...item, quantity }));
-      alert(`${item.name} added to basket!`);
-    } else {
-      alert("Please select a quantity first");
+      dispatch(
+        addToCart({
+          id: item.id,
+          price_list_entry_id: item.id,
+          cloth_name: item.cloth_name,
+          size: item.size,
+          price: Number(item.fua_price),
+          image: item.image_url || item.image,
+          quantity,
+        }),
+      );
+      setQuantities((prev) => ({ ...prev, [item.id]: 0 }));
     }
   };
 
@@ -82,7 +99,7 @@ const ClothSelection = () => {
             }}
             className="pb-16"
           >
-            {items.map((item) => (
+            {catalogItems.map((item) => (
               <SwiperSlide key={item.id} className="py-4">
                 <motion.div
                   whileHover={{ y: -8 }}
@@ -90,19 +107,23 @@ const ClothSelection = () => {
                 >
                   {/* Product Image */}
                   <div className="h-52 w-full flex items-center justify-center mb-6">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
+                    {resolveCatalogImageUrl(item.image_url || item.image) ? (
+                      <img
+                        src={resolveCatalogImageUrl(item.image_url || item.image)}
+                        alt={item.cloth_name}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <Shirt className="text-gray-300" size={68} strokeWidth={1.25} />
+                    )}
                   </div>
 
                   {/* Product Info */}
                   <h3 className="text-xl font-bold text-gray-900 mb-1">
-                    {item.name}
+                    {item.cloth_name}
                   </h3>
                   <p className="text-gray-500 font-medium mb-6">
-                    {item.price} Birr
+                    {formatETB(item.fua_price)}
                   </p>
 
                   {/* Counter Control */}
@@ -125,7 +146,10 @@ const ClothSelection = () => {
                   </div>
 
                   {/* Add to Basket Button */}
-                  <button className="w-full py-3 bg-[#4081a2] hover:bg-[#356d8a] text-white font-bold rounded-lg transition-all shadow-lg shadow-blue-900/10 active:scale-95" onClick={()=>handleAddToBasket(item)}>
+                  <button
+                    className="w-full py-3 bg-[#4081a2] hover:bg-[#356d8a] text-white font-bold rounded-lg transition-all shadow-lg shadow-blue-900/10 active:scale-95"
+                    onClick={() => handleAddToBasket(item)}
+                  >
                     Add to Basket
                   </button>
                 </motion.div>
@@ -136,7 +160,10 @@ const ClothSelection = () => {
 
         {/* View All Link */}
         <div className="mt-8 text-right">
-          <button className="text-[#4081a2] font-bold hover:underline flex items-center gap-1 ml-auto text-sm uppercase tracking-wider" onClick={()=>navigate("/item-list")}>
+          <button
+            className="text-[#4081a2] font-bold hover:underline flex items-center gap-1 ml-auto text-sm uppercase tracking-wider"
+            onClick={() => navigate("/item-list")}
+          >
             View All Items {">>"}
           </button>
         </div>

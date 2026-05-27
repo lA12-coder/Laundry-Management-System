@@ -78,6 +78,8 @@ class Order(models.Model):
         PENDING = "pending", "Pending"
         PICKED_UP = "picked_up", "Picked Up"
         WASHING = "washing", "Washing"
+        WASHED = "washed", "Washed"
+        DRIED = "dried", "Dried"
         READY = "ready", "Ready to Deliver"
         OUT_FOR_DELIVERY = "out_for_delivery", "Out for Delivery"
         DELIVERED = "delivered", "Delivered"
@@ -121,6 +123,12 @@ class Order(models.Model):
         blank=True,
         help_text="When the assigned rider confirmed the job and unlocked customer contact.",
     )
+    pickup_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    pickup_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    rider_last_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    rider_last_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    rider_delivered_confirmed_at = models.DateTimeField(null=True, blank=True)
+    customer_received_confirmed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -168,11 +176,52 @@ class ClothItem(models.Model):
         return f"{self.cloth_name} ({self.size}) x{self.quantity}"
 
 
+class RiderReview(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="rider_review")
+    rider = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="rider_reviews",
+    )
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="customer_rider_reviews",
+    )
+    rating = models.PositiveSmallIntegerField()
+    comment = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(rating__gte=1) & models.Q(rating__lte=5),
+                name="rider_review_rating_between_1_5",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Review order #{self.order_id} · rider {self.rider_id}"
+
+
 class TransactionLog(models.Model):
+    class SettlementStatus(models.TextChoices):
+        UNPAID = "unpaid", "Unpaid"
+        PAID = "paid", "Paid"
+
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="transaction_log")
     partner_earning = models.DecimalField(max_digits=12, decimal_places=2)
     fualaundry_commission = models.DecimalField(max_digits=12, decimal_places=2)
     rider_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("50.00"))
+    settlement_status = models.CharField(
+        max_length=20,
+        choices=SettlementStatus.choices,
+        default=SettlementStatus.UNPAID,
+    )
+    paid_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    payment_date = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -186,6 +235,8 @@ class AdminActionLog(models.Model):
     class Action(models.TextChoices):
         OVERRIDE_STATUS = "override_status", "Override Status"
         REASSIGN_RIDER = "reassign_rider", "Reassign Rider"
+        ASSIGN_PARTNER = "assign_partner", "Assign Partner"
+        PARTNER_SETTLEMENT = "partner_settlement", "Partner Settlement"
         PARTNER_APPROVAL = "partner_approval", "Partner Approval"
         PARTNER_DEACTIVATION = "partner_deactivation", "Partner Deactivation"
 

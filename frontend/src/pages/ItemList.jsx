@@ -13,9 +13,9 @@ import { useQuery } from "@tanstack/react-query";
 import { addToCart, removeFromCart } from "../redux/cartSlice";
 import CommonHero from "../components/common/CommonHero";
 import { useNavigate } from "react-router-dom";
-import api from "../API/axios";
 import { formatETB } from "../lib/currency";
 import { resolveCatalogImageUrl } from "../lib/mediaUrl";
+import { fetchAdminPriceList, pricingQueryKeys } from "../services/pricingApi";
 
 const ItemListPage = () => {
   const navigate = useNavigate();
@@ -24,11 +24,8 @@ const ItemListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [localQuantities, setLocalQuantities] = useState({});
   const { data: products = [] } = useQuery({
-    queryKey: ["priceList"],
-    queryFn: async () => {
-      const res = await api.get("/admin/price-list/");
-      return Array.isArray(res.data) ? res.data : [];
-    },
+    queryKey: pricingQueryKeys.all,
+    queryFn: fetchAdminPriceList,
     staleTime: 60_000,
   });
 

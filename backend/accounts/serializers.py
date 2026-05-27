@@ -23,7 +23,7 @@ def validate_e164_phone_number(value: str) -> str:
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
-    phone_number = serializers.CharField(validators=[validate_e164_phone_number])
+    phone_number = serializers.CharField()
 
     class Meta:
         model = User
@@ -37,6 +37,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value: str) -> str:
         return value.strip().lower()
+
+    def validate_phone_number(self, value: str) -> str:
+        from .utils import normalize_phone_number
+
+        return normalize_phone_number(value)
 
     def create(self, validated_data: dict[str, Any]) -> User:
         return User.objects.create_user(
@@ -78,7 +83,9 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         fields = ("full_name", "email", "phone_number", "home_address", "secondary_addresses")
 
     def validate_phone_number(self, value: str) -> str:
-        return validate_e164_phone_number(value)
+        from .utils import normalize_phone_number
+
+        return normalize_phone_number(value)
 
     def validate_email(self, value: str) -> str:
         return value.strip().lower()

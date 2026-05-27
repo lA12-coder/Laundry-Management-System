@@ -6,6 +6,7 @@ import { useToast } from "../../components/admin/ToastContainer";
 import OrderTable from "../../components/admin/orders/OrderTable";
 import OrderStatusControl from "../../components/admin/orders/OrderStatusControl";
 import RiderAssignmentPanel from "../../components/admin/orders/RiderAssignmentPanel";
+import PartnerAssignmentPanel from "../../components/admin/orders/PartnerAssignmentPanel";
 import { SkeletonCard } from "../../components/admin/orders/SkeletonCard";
 import {
   OrderStatus,
@@ -226,6 +227,11 @@ export default function OrderManagementWorkspace() {
                 order={selectedOrder}
                 onSuccess={handleOrderUpdated}
                 onError={(msg) => toast.error("Reassign failed", msg)}
+              />
+              <PartnerAssignmentPanel
+                order={selectedOrder}
+                onSuccess={handleOrderUpdated}
+                onError={(msg) => toast.error("Partner assignment failed", msg)}
               />
             </>
           ) : (

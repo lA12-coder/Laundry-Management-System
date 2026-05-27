@@ -312,7 +312,11 @@ export default function OrderTable({
                   {row.getIsExpanded() && (
                     <TableRow key={`${row.id}-expanded`} className="hover:bg-transparent">
                       <TableCell colSpan={columns.length} className="p-0">
-                        <ClothItemsPanel items={row.original.cloth_items} />
+                        <ClothItemsPanel
+                          items={row.original.cloth_items}
+                          riderReviewComment={row.original.rider_review_comment}
+                          riderReviewRating={row.original.rider_review_rating}
+                        />
                       </TableCell>
                     </TableRow>
                   )}

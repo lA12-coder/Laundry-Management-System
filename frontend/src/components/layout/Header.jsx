@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { assets } from "../../assets/assets";
 import { useSelector } from "react-redux";
@@ -11,7 +11,9 @@ import NotificationCenter from "../common/NotificationCenter";
 
 const Header = () => {
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const profileRef = useRef(null);
   const navigate = useNavigate();
   const totalQuantity = useSelector((state) => state.cart.totalQuantity);
   const user = useSelector((state) => state.auth.user);
@@ -28,6 +30,18 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+    if (profileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [profileOpen]);
+
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "About us", path: "/about-us" },
@@ -35,9 +49,24 @@ const Header = () => {
     { name: "Contact us", path: "/contact-us" },
   ];
 
+  const initials = user?.full_name
+    ? user.full_name
+        .split(" ")
+        .map((word) => word[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "U";
+
+  const customerMenuItems = [
+    { label: "My Orders", path: "/dashboard" },
+    { label: "Settings", path: "/profile" },
+    { label: "Place New Order", path: "/item-list" },
+  ];
+
   return (
     <nav
-      className={`overflow-hidden fixed top-0 left-0 w-full z-150 transition-all duration-500 ease-in-out ${
+      className={`overflow-visible fixed top-0 left-0 w-full z-[9999] transition-all duration-500 ease-in-out ${
         scrolled
           ? "bg-white/90 backdrop-blur-md py-3 shadow-md"
           : "bg-[#4081a2] py-5"
@@ -91,7 +120,7 @@ const Header = () => {
             Order Now
           </button>
 
-          {user && (showOpsDashboard || showRiderConsole) && (
+          {/* {user && (showOpsDashboard || showRiderConsole) && (
             <button
               onClick={() => navigate(homePath)}
               className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
@@ -102,7 +131,7 @@ const Header = () => {
             >
               {showRiderConsole ? "Rider console" : "Dashboard"}
             </button>
-          )}
+          )} */}
         </div>
 
         {/* Action Buttons */}
@@ -135,16 +164,85 @@ const Header = () => {
           {user && <NotificationCenter scrolled={scrolled} />}
 
           {user ? (
-            <button
-              onClick={logout}
-              className={`hidden md:block px-4 py-1.5 mb-0 rounded-full font-bold text-sm transition-all duration-300 active:scale-95 shadow-sm ${
-                scrolled
-                  ? "bg-[#FD9837] text-white hover:bg-[#e6862f]"
-                  : "bg-white text-[#4081a2] hover:bg-[#FD9837] hover:text-white"
-              }`}
-            >
-              Log Out
-            </button>
+            <div className="hidden md:block relative" ref={profileRef}>
+              <button
+                type="button"
+                onClick={() => setProfileOpen((prev) => !prev)}
+                className={`flex items-center gap-2 px-2 py-1.5 rounded-full border transition-all ${
+                  scrolled
+                    ? "border-slate-200 bg-white hover:bg-slate-50"
+                    : "border-white/30 bg-white/10 hover:bg-white/20"
+                }`}
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+              >
+                <div className="w-8 h-8 rounded-full bg-[#4c84a4] text-white flex items-center justify-center text-xs font-bold">
+                  {initials}
+                </div>
+                <span
+                  className={`text-xs font-semibold max-w-[120px] truncate ${
+                    scrolled ? "text-slate-700" : "text-white"
+                  }`}
+                >
+                  {user?.full_name || "My Account"}
+                </span>
+              </button>
+
+              {profileOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-xl p-2 z-[10000]"
+                >
+                  <div className="px-3 py-2 border-b border-slate-100">
+                    <p className="text-sm font-bold text-slate-900 truncate">
+                      {user?.full_name || "Customer"}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                  </div>
+
+                  {customerMenuItems.map((item) => (
+                    <button
+                      key={item.path}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        navigate(item.path);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+
+                  {showOpsDashboard || showRiderConsole ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        navigate(homePath);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-[#4c84a4] hover:bg-blue-50 rounded-lg font-semibold"
+                    >
+                      {showRiderConsole ? "Rider Console" : "Admin Dashboard"}
+                    </button>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setProfileOpen(false);
+                      logout();
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg font-semibold"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <button
               onClick={() => navigate("/signup")}
@@ -215,12 +313,39 @@ const Header = () => {
 
           <div className="mt-auto space-y-4">
             {user ? (
-              <button
-                onClick={logout}
-                className="w-full py-4 bg-[#FD9837] text-white font-bold rounded-xl shadow-lg active:scale-105 hover:bg-[#e6862f]"
-              >
-                Log Out
-              </button>
+              <div className="space-y-2">
+                {customerMenuItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => {
+                      setOpen(false);
+                      navigate(item.path);
+                    }}
+                    className="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors text-sm"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+
+                {(showOpsDashboard || showRiderConsole) && (
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      navigate(homePath);
+                    }}
+                    className="w-full py-3 bg-blue-50 text-[#4c84a4] font-bold rounded-xl hover:bg-blue-100 transition-colors text-sm"
+                  >
+                    {showRiderConsole ? "Rider Console" : "Admin Dashboard"}
+                  </button>
+                )}
+
+                <button
+                  onClick={logout}
+                  className="w-full py-4 bg-[#FD9837] text-white font-bold rounded-xl shadow-lg active:scale-105 hover:bg-[#e6862f]"
+                >
+                  Log Out
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => navigate("/signup")}

@@ -1,4 +1,28 @@
 const SCRIPT_ID = "fualaundry-google-maps";
+const READY_TIMEOUT_MS = 15_000;
+
+function hasUsableMapsNamespace() {
+  const maps = window.google?.maps;
+  return Boolean(maps && (typeof maps.Map === "function" || typeof maps.importLibrary === "function"));
+}
+
+function waitForMapsReady(timeoutMs = READY_TIMEOUT_MS) {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    const check = () => {
+      if (hasUsableMapsNamespace()) {
+        resolve(window.google.maps);
+        return;
+      }
+      if (Date.now() - started > timeoutMs) {
+        reject(new Error("Google Maps namespace did not initialize in time."));
+        return;
+      }
+      window.requestAnimationFrame(check);
+    };
+    check();
+  });
+}
 
 /**
  * Loads Google Maps JavaScript API once per session.
@@ -13,14 +37,19 @@ export function loadGoogleMaps() {
     );
   }
 
-  if (window.google?.maps) {
+  if (hasUsableMapsNamespace()) {
     return Promise.resolve(window.google.maps);
   }
 
   const existing = document.getElementById(SCRIPT_ID);
   if (existing) {
+    if (hasUsableMapsNamespace() || existing.getAttribute("data-loaded") === "true") {
+      return waitForMapsReady();
+    }
     return new Promise((resolve, reject) => {
-      existing.addEventListener("load", () => resolve(window.google.maps));
+      existing.addEventListener("load", () => {
+        waitForMapsReady().then(resolve).catch(reject);
+      });
       existing.addEventListener("error", () =>
         reject(new Error("Google Maps script failed to load.")),
       );
@@ -32,8 +61,11 @@ export function loadGoogleMaps() {
     script.id = SCRIPT_ID;
     script.async = true;
     script.defer = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry`;
-    script.onload = () => resolve(window.google.maps);
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&loading=async&v=weekly`;
+    script.onload = () => {
+      script.setAttribute("data-loaded", "true");
+      waitForMapsReady().then(resolve).catch(reject);
+    };
     script.onerror = () => reject(new Error("Google Maps script failed to load."));
     document.head.appendChild(script);
   });
