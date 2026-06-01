@@ -13,6 +13,9 @@ from .views import (
     RegisterView,
     ResendVerificationEmailView,
     SecuritySettingsView,
+    SubscriptionPlanListView,
+    CustomerSubscriptionCheckoutView,
+    CustomerSubscriptionListView,
     VerifyEmailView,
 )
 
@@ -37,4 +40,7 @@ urlpatterns = [
         CustomerNotificationReadView.as_view(),
         name="customer_notifications_mark_read",
     ),
+    path("subscription-plans/", SubscriptionPlanListView.as_view(), name="subscription_plan_list"),
+    path("subscriptions/checkout/", CustomerSubscriptionCheckoutView.as_view(), name="subscription_checkout"),
+    path("subscriptions/me/", CustomerSubscriptionListView.as_view(), name="subscription_me"),
 ]

@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import SystemConfiguration
+from .models import LaundryLocation, SystemConfiguration, Testimonial
 
 
 class SystemConfigurationSerializer(serializers.ModelSerializer):
@@ -76,3 +76,70 @@ class SystemConfigurationSerializer(serializers.ModelSerializer):
         if value > 1_000_000:
             raise serializers.ValidationError("Daily cap is too large.")
         return value
+
+
+class TestimonialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Testimonial
+        fields = (
+            "id",
+            "customer_name",
+            "rating",
+            "review_text",
+            "is_approved_for_public",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at")
+
+
+class PublicTestimonialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Testimonial
+        fields = (
+            "id",
+            "customer_name",
+            "rating",
+            "review_text",
+            "created_at",
+        )
+        read_only_fields = fields
+
+
+class LaundryLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LaundryLocation
+        fields = (
+            "id",
+            "hub_name",
+            "latitude",
+            "longitude",
+            "is_active",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at")
+
+
+class PublicLaundryLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LaundryLocation
+        fields = (
+            "id",
+            "hub_name",
+            "latitude",
+            "longitude",
+        )
+        read_only_fields = fields
+
+
+class ContactSubmissionSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120)
+    email = serializers.EmailField()
+    message = serializers.CharField(max_length=5000)
+
+
+class TestimonialSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Testimonial
+        fields = ("customer_name", "rating", "review_text")

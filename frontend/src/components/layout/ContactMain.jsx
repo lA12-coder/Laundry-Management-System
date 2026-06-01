@@ -2,15 +2,12 @@ import React from "react";
 import { motion } from "framer-motion";
 import { assets } from "../../assets/assets";
 import { FaPhoneAlt, FaEnvelope, FaTelegramPlane } from "react-icons/fa"; // Using react-icons for a modern look
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
+import { submitContactForm } from "../../services/engagementApi";
 
 const formFields = [
   { label: "Name", placeholder: "John Doe", type: "text", name: "name" },
-  {
-    label: "Phone number",
-    placeholder: "+251-970713018",
-    type: "tel",
-    name: "phone",
-  },
   {
     label: "Email",
     placeholder: "john.doe@example.com",
@@ -19,12 +16,31 @@ const formFields = [
   },
 ];
 
-const handleSubmit = (e) => {
-  e.preventDefault(); // Prevent page reload
-  alert("Form submitted!");
-};
-
 const ContactMain = () => {
+  const [form, setForm] = React.useState({
+    name: "",
+    email: "",
+    message: "",
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: submitContactForm,
+    onSuccess: () => {
+      toast.success("Message sent successfully.");
+      setForm({ name: "", email: "", message: "" });
+    },
+    onError: (error) => {
+      toast.error(
+        error?.response?.data?.message || "Could not send your message.",
+      );
+    },
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    submitMutation.mutate(form);
+  };
+
   return (
     <section className="py-24 px-6 bg-white">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
@@ -47,6 +63,11 @@ const ContactMain = () => {
                 <input
                   type={type}
                   name={name}
+                  value={form[name]}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, [name]: e.target.value }))
+                  }
+                  required
                   placeholder={placeholder}
                   className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#4c84a4] outline-none transition-all shadow-sm"
                 />
@@ -59,12 +80,20 @@ const ContactMain = () => {
               </label>
               <textarea
                 rows="4"
+                value={form.message}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, message: e.target.value }))
+                }
+                required
                 placeholder="Enter your message here..."
                 className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#4c84a4] outline-none transition-all resize-none shadow-sm"
               />
             </div>
-            <button className="w-full py-4 bg-[#4c84a4] text-white font-black uppercase tracking-widest rounded-lg shadow-md hover:bg-[#3d6a83] transition-colors">
-              Submit
+            <button
+              disabled={submitMutation.isPending}
+              className="w-full py-4 bg-[#4c84a4] text-white font-black uppercase tracking-widest rounded-lg shadow-md hover:bg-[#3d6a83] transition-colors disabled:opacity-60"
+            >
+              {submitMutation.isPending ? "Submitting..." : "Submit"}
             </button>
           </form>
         </motion.div>

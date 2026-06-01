@@ -1,8 +1,11 @@
 from django.utils.http import urlsafe_base64_decode
+from django.utils import timezone
+from datetime import timedelta
 from rest_framework.decorators import permission_classes
 import logging
 from typing import Any
 from rest_framework import generics,status
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -12,12 +15,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from .signals import send_verification_email
 
 User = get_user_model()
 
-from .models import CustomerNotification
+from .models import CustomerNotification, CustomerSubscription, SubscriptionPlan
 from .serializers import (
     ChangePasswordSerializer,
     ClaimAccountSerializer,
@@ -30,9 +34,50 @@ from .serializers import (
     UserLoginSerializer,
     UserProfileUpdateSerializer,
     UserRegistrationSerializer,
+    CustomerSubscriptionSerializer,
+    SubscriptionCheckoutSerializer,
+    SubscriptionPlanSerializer,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def expire_subscriptions_and_notify_admins() -> int:
+    today = timezone.localdate()
+    to_expire = CustomerSubscription.objects.select_related("customer", "plan").filter(
+        status=CustomerSubscription.Status.ACTIVE,
+        end_date__lt=today,
+    )
+    expired_count = 0
+    for subscription in to_expire:
+        subscription.status = CustomerSubscription.Status.EXPIRED
+        subscription.save(update_fields=["status", "updated_at"])
+        expired_count += 1
+
+        admin_users = User.objects.filter(
+            is_active=True,
+        ).filter(Q(is_superuser=True) | Q(is_staff=True, role=User.Role.ADMIN))
+        notices = [
+            CustomerNotification(
+                user=admin_user,
+                title="Subscription expired",
+                message=(
+                    f"{subscription.customer.full_name or subscription.customer.email} "
+                    f"has an expired {subscription.plan.name} subscription."
+                ),
+                notification_type=CustomerNotification.NotificationType.SYSTEM,
+                metadata={
+                    "event": "subscription_expired",
+                    "subscription_id": subscription.id,
+                    "customer_id": subscription.customer_id,
+                    "plan_id": subscription.plan_id,
+                },
+            )
+            for admin_user in admin_users
+        ]
+        if notices:
+            CustomerNotification.objects.bulk_create(notices)
+    return expired_count
 
 
 def json_response(
@@ -550,6 +595,76 @@ class CustomerNotificationReadView(APIView):
             status_text="success",
             message="Notifications marked as read.",
             data={"updated": updated, "unread_count": unread_count},
+            http_status=status.HTTP_200_OK,
+        )
+
+
+class SubscriptionPlanListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        plans = SubscriptionPlan.objects.filter(is_active=True).order_by("sort_order", "price")
+        serializer = SubscriptionPlanSerializer(plans, many=True)
+        return json_response(
+            status_text="success",
+            message="Subscription plans fetched successfully.",
+            data=serializer.data,
+            http_status=status.HTTP_200_OK,
+        )
+
+
+class CustomerSubscriptionCheckoutView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        if request.user.role != User.Role.CUSTOMER:
+            return json_response(
+                status_text="error",
+                message="Only customers can create subscriptions.",
+                http_status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = SubscriptionCheckoutSerializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            return json_response(
+                status_text="error",
+                message="Subscription checkout validation failed.",
+                errors=serializer.errors,
+                http_status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        subscription = CustomerSubscription.objects.create(
+            customer=request.user,
+            plan=serializer.validated_data["plan"],
+            receipt_image=serializer.validated_data["receipt_image"],
+            status=CustomerSubscription.Status.PENDING_APPROVAL,
+        )
+        payload = CustomerSubscriptionSerializer(subscription, context={"request": request}).data
+        return json_response(
+            status_text="success",
+            message="Subscription submitted and pending admin approval.",
+            data=payload,
+            http_status=status.HTTP_201_CREATED,
+        )
+
+
+class CustomerSubscriptionListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Any, *args: Any, **kwargs: Any) -> Response:
+        expire_subscriptions_and_notify_admins()
+        queryset = (
+            CustomerSubscription.objects.select_related("plan")
+            .filter(customer=request.user)
+            .order_by("-created_at")
+        )
+        serializer = CustomerSubscriptionSerializer(queryset, many=True, context={"request": request})
+        return json_response(
+            status_text="success",
+            message="Customer subscriptions fetched successfully.",
+            data=serializer.data,
             http_status=status.HTTP_200_OK,
         )
 

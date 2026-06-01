@@ -3,11 +3,21 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from .views import api_root
+from .views import (
+    ContactSubmitView,
+    PublicLaundryLocationsView,
+    PublicTestimonialsView,
+    TestimonialSubmitView,
+    api_root,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", api_root, name="api-root"),
+    path("api/contact/submit/", ContactSubmitView.as_view(), name="public_contact_submit"),
+    path("api/testimonials/public/", PublicTestimonialsView.as_view(), name="public_testimonials"),
+    path("api/testimonials/submit/", TestimonialSubmitView.as_view(), name="testimonial_submit"),
+    path("api/locations/public/", PublicLaundryLocationsView.as_view(), name="public_laundry_locations"),
 
     # API Endpoints
     path("api/", include([

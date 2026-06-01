@@ -8,6 +8,8 @@ import {
   UserCheck,
   ScrollText,
   Shirt,
+  ReceiptText,
+  MessageSquareQuote,
 } from "lucide-react";
 import { Permission } from "../lib/rbac";
 
@@ -60,6 +62,18 @@ export const ADMIN_NAV_ITEMS = [
     icon: Wallet,
     permission: Permission.VIEW_FINANCIALS,
     readOnlyPermission: Permission.EDIT_FINANCIALS,
+  },
+  {
+    name: "Subscriptions",
+    href: "/admin/subscriptions",
+    icon: ReceiptText,
+    permission: Permission.MANAGE_SUBSCRIPTIONS,
+  },
+  {
+    name: "Testimonials",
+    href: "/admin/testimonials",
+    icon: MessageSquareQuote,
+    permission: Permission.MANAGE_TESTIMONIALS,
   },
   {
     name: "Audit Logs",

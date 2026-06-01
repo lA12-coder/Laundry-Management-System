@@ -69,3 +69,75 @@ class CustomerNotification(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} → {self.user_id}"
+
+
+class SubscriptionPlan(models.Model):
+    class BillingCycle(models.TextChoices):
+        WEEKLY = "weekly", "Weekly"
+        MONTHLY = "monthly", "Monthly"
+        YEARLY = "yearly", "Yearly"
+
+    name = models.CharField(max_length=120, unique=True)
+    slug = models.SlugField(max_length=50, unique=True)
+    billing_cycle = models.CharField(max_length=20, choices=BillingCycle.choices)
+    price = models.DecimalField(max_digits=12, decimal_places=2)
+    duration_days = models.PositiveIntegerField()
+    description = models.TextField(blank=True, default="")
+    features = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "price"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.price} ETB)"
+
+
+class CustomerSubscription(models.Model):
+    class Status(models.TextChoices):
+        PENDING_APPROVAL = "pending_approval", "Pending approval"
+        ACTIVE = "active", "Active"
+        EXPIRED = "expired", "Expired"
+        DISABLED = "disabled", "Disabled"
+
+    customer = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+    )
+    plan = models.ForeignKey(
+        SubscriptionPlan,
+        on_delete=models.PROTECT,
+        related_name="customer_subscriptions",
+    )
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    receipt_image = models.FileField(upload_to="subscription_receipts/")
+    status = models.CharField(
+        max_length=30,
+        choices=Status.choices,
+        default=Status.PENDING_APPROVAL,
+    )
+    admin_note = models.CharField(max_length=255, blank=True, default="")
+    approved_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approved_subscriptions",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["customer", "-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Subscription #{self.pk} for {self.customer_id}"

@@ -1,10 +1,14 @@
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import SystemConfiguration
+from .models import LaundryLocation, SystemConfiguration, Testimonial
 from .permissions import IsStaffAdminRole, IsSuperAdminUser
-from .serializers import SystemConfigurationSerializer
+from .serializers import (
+    LaundryLocationSerializer,
+    SystemConfigurationSerializer,
+    TestimonialSerializer,
+)
 
 
 class SystemConfigurationView(APIView):
@@ -28,3 +32,15 @@ class SystemConfigurationView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class TestimonialModeratorViewSet(viewsets.ModelViewSet):
+    serializer_class = TestimonialSerializer
+    permission_classes = [IsStaffAdminRole]
+    queryset = Testimonial.objects.all().order_by("-created_at")
+
+
+class LaundryLocationAdminViewSet(viewsets.ModelViewSet):
+    serializer_class = LaundryLocationSerializer
+    permission_classes = [IsStaffAdminRole]
+    queryset = LaundryLocation.objects.all().order_by("hub_name")

@@ -22,6 +22,8 @@ import RiderManagement from "./pages/admin/RiderManagement";
 import PricingWorkspace from "./pages/admin/PricingWorkspace";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
+import AdminSubscriptionReview from "./pages/admin/AdminSubscriptionReview";
+import AdminTestimonials from "./pages/admin/AdminTestimonials";
 import ProfileSettings from "./pages/customer/ProfileSettings.tsx";
 import ClaimAccountPage from "./pages/customer/ClaimAccountPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
@@ -96,6 +98,22 @@ function App() {
           }
         />
         <Route
+          path="subscriptions"
+          element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVELS}>
+              <AdminSubscriptionReview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="testimonials"
+          element={
+            <ProtectedRoute allowedRoles={ADMIN_LEVELS}>
+              <AdminTestimonials />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="pricing"
           element={
             <ProtectedRoute allowedRoles={ADMIN_LEVELS}>
@@ -106,7 +124,7 @@ function App() {
         <Route
           path="settings"
           element={
-            <ProtectedRoute allowedRoles={[AccessLevel.SUPERADMIN]}>
+            <ProtectedRoute allowedRoles={ADMIN_LEVELS}>
               <AdminSettings />
             </ProtectedRoute>
           }

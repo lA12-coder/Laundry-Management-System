@@ -8,6 +8,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
+from .models import CustomerSubscription, SubscriptionPlan
 
 E164_PHONE_REGEX = re.compile(r"^\+[1-9]\d{1,14}$")
 
@@ -194,3 +195,98 @@ class UserLoginSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         data["user"] = UserDetailSerializer(self.user).data
         return data
+
+
+class SubscriptionPlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubscriptionPlan
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "billing_cycle",
+            "price",
+            "duration_days",
+            "description",
+            "features",
+            "is_active",
+        )
+        read_only_fields = fields
+
+
+class CustomerSubscriptionSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source="customer.full_name", read_only=True)
+    customer_email = serializers.EmailField(source="customer.email", read_only=True)
+    plan_name = serializers.CharField(source="plan.name", read_only=True)
+    receipt_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomerSubscription
+        fields = (
+            "id",
+            "customer",
+            "customer_name",
+            "customer_email",
+            "plan",
+            "plan_name",
+            "start_date",
+            "end_date",
+            "status",
+            "admin_note",
+            "receipt_image",
+            "receipt_url",
+            "approved_by",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "customer",
+            "customer_name",
+            "customer_email",
+            "plan_name",
+            "start_date",
+            "end_date",
+            "status",
+            "approved_by",
+            "created_at",
+            "updated_at",
+            "receipt_url",
+        )
+
+    def get_receipt_url(self, obj):
+        if not obj.receipt_image:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.receipt_image.url)
+        return obj.receipt_image.url
+
+
+class SubscriptionCheckoutSerializer(serializers.Serializer):
+    plan_id = serializers.PrimaryKeyRelatedField(
+        source="plan",
+        queryset=SubscriptionPlan.objects.filter(is_active=True),
+    )
+    receipt_image = serializers.FileField()
+
+    def validate_receipt_image(self, value):
+        max_size_bytes = 8 * 1024 * 1024
+        allowed_types = {
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "application/pdf",
+        }
+        if value.size > max_size_bytes:
+            raise serializers.ValidationError("Receipt must be 8MB or smaller.")
+        content_type = (getattr(value, "content_type", "") or "").lower()
+        if content_type and content_type not in allowed_types:
+            name = (getattr(value, "name", "") or "").lower()
+            if not (
+                name.endswith(".jpg")
+                or name.endswith(".jpeg")
+                or name.endswith(".png")
+                or name.endswith(".pdf")
+            ):
+                raise serializers.ValidationError("Upload JPG, PNG, or PDF receipt.")
+        return value

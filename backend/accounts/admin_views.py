@@ -1,10 +1,15 @@
 from django.contrib.auth import get_user_model
+from datetime import timedelta
+from django.utils import timezone
 from django.db.models import Avg, Count, FloatField, Prefetch, Q, Value
 from django.db.models.functions import Coalesce
-from rest_framework import mixins, serializers, viewsets
+from rest_framework import mixins, serializers, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from core.permissions import IsStaffAdminRole
 from orders.models import Order
+from .models import CustomerNotification, CustomerSubscription
 
 User = get_user_model()
 
@@ -267,3 +272,163 @@ class RiderFleetViewSet(viewsets.ModelViewSet):
                 | Q(email__icontains=search)
             )
         return queryset
+
+
+class CustomerSubscriptionAdminSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source="customer.full_name", read_only=True)
+    customer_email = serializers.EmailField(source="customer.email", read_only=True)
+    plan_name = serializers.CharField(source="plan.name", read_only=True)
+    receipt_url = serializers.SerializerMethodField()
+    approved_by_name = serializers.CharField(source="approved_by.full_name", read_only=True)
+
+    class Meta:
+        model = CustomerSubscription
+        fields = (
+            "id",
+            "customer",
+            "customer_name",
+            "customer_email",
+            "plan",
+            "plan_name",
+            "status",
+            "start_date",
+            "end_date",
+            "receipt_url",
+            "admin_note",
+            "approved_by",
+            "approved_by_name",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = fields
+
+    def get_receipt_url(self, obj):
+        if not obj.receipt_image:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.receipt_image.url)
+        return obj.receipt_image.url
+
+
+class SubscriptionDecisionSerializer(serializers.Serializer):
+    note = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
+def _push_admin_subscription_notice(event: str, message: str, subscription: CustomerSubscription):
+    admin_users = User.objects.filter(
+        is_active=True,
+    ).filter(Q(is_superuser=True) | Q(is_staff=True, role=User.Role.ADMIN))
+    notices = [
+        CustomerNotification(
+            user=admin_user,
+            title="Subscription alert",
+            message=message,
+            notification_type=CustomerNotification.NotificationType.SYSTEM,
+            metadata={
+                "event": event,
+                "subscription_id": subscription.id,
+                "customer_id": subscription.customer_id,
+                "plan_id": subscription.plan_id,
+                "status": subscription.status,
+            },
+        )
+        for admin_user in admin_users
+    ]
+    if notices:
+        CustomerNotification.objects.bulk_create(notices)
+
+
+def _expire_stale_subscriptions():
+    today = timezone.localdate()
+    stale = CustomerSubscription.objects.select_related("customer", "plan").filter(
+        status=CustomerSubscription.Status.ACTIVE,
+        end_date__lt=today,
+    )
+    for subscription in stale:
+        subscription.status = CustomerSubscription.Status.EXPIRED
+        subscription.save(update_fields=["status", "updated_at"])
+        _push_admin_subscription_notice(
+            event="subscription_expired",
+            message=(
+                f"{subscription.customer.full_name or subscription.customer.email} "
+                f"{subscription.plan.name} subscription has expired."
+            ),
+            subscription=subscription,
+        )
+
+
+class SubscriptionReviewViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    serializer_class = CustomerSubscriptionAdminSerializer
+    permission_classes = [IsStaffAdminRole]
+
+    def get_queryset(self):
+        _expire_stale_subscriptions()
+        queryset = CustomerSubscription.objects.select_related(
+            "customer", "plan", "approved_by"
+        ).order_by("-created_at")
+        status_filter = (self.request.query_params.get("status") or "").strip()
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        search = (self.request.query_params.get("search") or "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(customer__full_name__icontains=search)
+                | Q(customer__email__icontains=search)
+                | Q(plan__name__icontains=search)
+            )
+        return queryset
+
+    @action(detail=True, methods=["post"], url_path="approve")
+    def approve(self, request, pk=None):
+        subscription = self.get_object()
+        serializer = SubscriptionDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        today = timezone.localdate()
+        subscription.status = CustomerSubscription.Status.ACTIVE
+        subscription.start_date = today
+        subscription.end_date = today + timedelta(days=subscription.plan.duration_days)
+        subscription.approved_by = request.user
+        subscription.admin_note = serializer.validated_data.get("note", "").strip()
+        subscription.save(
+            update_fields=[
+                "status",
+                "start_date",
+                "end_date",
+                "approved_by",
+                "admin_note",
+                "updated_at",
+            ]
+        )
+        return Response(self.get_serializer(subscription).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="reject")
+    def reject(self, request, pk=None):
+        subscription = self.get_object()
+        serializer = SubscriptionDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        note = serializer.validated_data.get("note", "").strip()
+        if not note:
+            note = "Receipt rejected by admin."
+        subscription.status = CustomerSubscription.Status.DISABLED
+        subscription.approved_by = request.user
+        subscription.admin_note = note
+        subscription.save(update_fields=["status", "approved_by", "admin_note", "updated_at"])
+        return Response(self.get_serializer(subscription).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"], url_path="disable")
+    def disable(self, request, pk=None):
+        subscription = self.get_object()
+        serializer = SubscriptionDecisionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        note = serializer.validated_data.get("note", "").strip() or "Disabled by admin."
+        subscription.status = CustomerSubscription.Status.DISABLED
+        subscription.approved_by = request.user
+        subscription.admin_note = note
+        subscription.save(update_fields=["status", "approved_by", "admin_note", "updated_at"])
+        _push_admin_subscription_notice(
+            event="subscription_disabled",
+            message=f"{subscription.customer.full_name} subscription was manually disabled.",
+            subscription=subscription,
+        )
+        return Response(self.get_serializer(subscription).data, status=status.HTTP_200_OK)

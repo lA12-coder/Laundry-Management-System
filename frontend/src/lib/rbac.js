@@ -22,6 +22,8 @@ export const Permission = Object.freeze({
   VIEW_CUSTOMER_DASHBOARD: "VIEW_CUSTOMER_DASHBOARD",
   VIEW_PRICING: "VIEW_PRICING",
   EDIT_PRICING: "EDIT_PRICING",
+  MANAGE_SUBSCRIPTIONS: "MANAGE_SUBSCRIPTIONS",
+  MANAGE_TESTIMONIALS: "MANAGE_TESTIMONIALS",
 });
 
 const PERMISSION_MATRIX = Object.freeze({
@@ -63,6 +65,16 @@ const PERMISSION_MATRIX = Object.freeze({
     AccessLevel.STAFF,
   ],
   [Permission.EDIT_PRICING]: [AccessLevel.SUPERADMIN, AccessLevel.ADMIN],
+  [Permission.MANAGE_SUBSCRIPTIONS]: [
+    AccessLevel.SUPERADMIN,
+    AccessLevel.ADMIN,
+    AccessLevel.STAFF,
+  ],
+  [Permission.MANAGE_TESTIMONIALS]: [
+    AccessLevel.SUPERADMIN,
+    AccessLevel.ADMIN,
+    AccessLevel.STAFF,
+  ],
 });
 
 /**

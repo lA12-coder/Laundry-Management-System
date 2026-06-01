@@ -8,6 +8,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { Permission } from "../../lib/rbac";
 import { useToast } from "../../components/admin/ToastContainer";
 import SystemPreferencesPanel from "../../components/admin/SystemPreferencesPanel";
+import LaundryLocationPanel from "../../components/admin/LaundryLocationPanel";
 import {
   describeRiderFeeConfig,
   fetchSystemConfig,
@@ -98,10 +99,6 @@ export default function AdminSettings() {
       ),
   });
 
-  if (!hasPermission(Permission.MANAGE_SETTINGS)) {
-    return null;
-  }
-
   const fieldCls =
     "w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white text-slate-950 focus:ring-2 focus:ring-cyan-500/30 outline-none dark:bg-zinc-900 dark:border-zinc-600 dark:text-slate-100";
 
@@ -118,6 +115,7 @@ export default function AdminSettings() {
         </p>
       </div>
 
+      {hasPermission(Permission.MANAGE_SETTINGS) ? (
       <form
         onSubmit={handleSubmit((values) => saveMutation.mutate(values))}
         className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5 dark:bg-zinc-800 dark:border-zinc-700"
@@ -224,8 +222,19 @@ export default function AdminSettings() {
           </>
         )}
       </form>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 dark:bg-zinc-800 dark:border-zinc-700">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            System fee controls are superadmin-only. You can still manage laundry hub
+            locations below.
+          </p>
+        </div>
+      )}
 
-      <SystemPreferencesPanel config={config} isLoading={isLoading} />
+      {hasPermission(Permission.MANAGE_SETTINGS) ? (
+        <SystemPreferencesPanel config={config} isLoading={isLoading} />
+      ) : null}
+      <LaundryLocationPanel />
     </div>
   );
 }

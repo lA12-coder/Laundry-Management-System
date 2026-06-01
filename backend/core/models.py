@@ -85,3 +85,45 @@ class SystemConfiguration(models.Model):
         if self.rider_fee_mode == self.RiderFeeMode.FIXED:
             return f"Rider fee: ETB {self.rider_fee_fixed_amount} per order"
         return f"Rider fee: {self.rider_fee_percent}% of order total"
+
+
+class Testimonial(models.Model):
+    customer_name = models.CharField(max_length=120)
+    rating = models.PositiveSmallIntegerField()
+    review_text = models.TextField()
+    is_approved_for_public = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["is_approved_for_public", "-created_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(rating__gte=1) & models.Q(rating__lte=5),
+                name="testimonial_rating_between_1_5",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.customer_name} ({self.rating}/5)"
+
+
+class LaundryLocation(models.Model):
+    hub_name = models.CharField(max_length=120)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["hub_name"]
+        indexes = [
+            models.Index(fields=["is_active", "hub_name"]),
+        ]
+
+    def __str__(self) -> str:
+        return self.hub_name
