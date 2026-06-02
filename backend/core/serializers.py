@@ -79,11 +79,15 @@ class SystemConfigurationSerializer(serializers.ModelSerializer):
 
 
 class TestimonialSerializer(serializers.ModelSerializer):
+    customer_image_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Testimonial
         fields = (
             "id",
             "customer_name",
+            "customer_image",
+            "customer_image_url",
             "rating",
             "review_text",
             "is_approved_for_public",
@@ -92,18 +96,37 @@ class TestimonialSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_at", "updated_at")
 
+    def get_customer_image_url(self, obj):
+        if not obj.customer_image:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.customer_image.url)
+        return obj.customer_image.url
+
 
 class PublicTestimonialSerializer(serializers.ModelSerializer):
+    customer_image = serializers.SerializerMethodField()
+
     class Meta:
         model = Testimonial
         fields = (
             "id",
             "customer_name",
+            "customer_image",
             "rating",
             "review_text",
             "created_at",
         )
         read_only_fields = fields
+
+    def get_customer_image(self, obj):
+        if not obj.customer_image:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.customer_image.url)
+        return obj.customer_image.url
 
 
 class LaundryLocationSerializer(serializers.ModelSerializer):

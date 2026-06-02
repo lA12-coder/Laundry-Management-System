@@ -9,7 +9,7 @@ from rest_framework.response import Response
 
 from core.permissions import IsStaffAdminRole
 from orders.models import Order
-from .models import CustomerNotification, CustomerSubscription
+from .models import CustomerNotification, CustomerSubscription, SubscriptionPlan
 
 User = get_user_model()
 
@@ -315,6 +315,38 @@ class SubscriptionDecisionSerializer(serializers.Serializer):
     note = serializers.CharField(required=False, allow_blank=True, max_length=255)
 
 
+class SubscriptionPlanAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubscriptionPlan
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "billing_cycle",
+            "price",
+            "duration_days",
+            "description",
+            "features",
+            "is_active",
+            "sort_order",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate_features(self, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Features must be a list of strings.")
+        cleaned = []
+        for feature in value:
+            text = str(feature).strip()
+            if text:
+                cleaned.append(text)
+        return cleaned
+
+
 def _push_admin_subscription_notice(event: str, message: str, subscription: CustomerSubscription):
     admin_users = User.objects.filter(
         is_active=True,
@@ -432,3 +464,20 @@ class SubscriptionReviewViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin
             subscription=subscription,
         )
         return Response(self.get_serializer(subscription).data, status=status.HTTP_200_OK)
+
+
+class SubscriptionPlanAdminViewSet(viewsets.ModelViewSet):
+    serializer_class = SubscriptionPlanAdminSerializer
+    permission_classes = [IsStaffAdminRole]
+
+    def get_queryset(self):
+        queryset = SubscriptionPlan.objects.order_by("sort_order", "price", "name")
+        status_filter = (self.request.query_params.get("status") or "").strip().lower()
+        if status_filter == "active":
+            queryset = queryset.filter(is_active=True)
+        elif status_filter == "inactive":
+            queryset = queryset.filter(is_active=False)
+        search = (self.request.query_params.get("search") or "").strip()
+        if search:
+            queryset = queryset.filter(Q(name__icontains=search) | Q(slug__icontains=search))
+        return queryset

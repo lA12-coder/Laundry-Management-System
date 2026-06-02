@@ -4,6 +4,7 @@ from .admin_views import (
     AdminUserViewSet,
     CustomerDirectoryViewSet,
     RiderFleetViewSet,
+    SubscriptionPlanAdminViewSet,
     SubscriptionReviewViewSet,
 )
 
@@ -12,6 +13,7 @@ router.register(r'users', AdminUserViewSet, basename='admin-users')
 router.register(r"customers", CustomerDirectoryViewSet, basename="admin-customers")
 router.register(r"riders", RiderFleetViewSet, basename="admin-riders")
 router.register(r"subscriptions", SubscriptionReviewViewSet, basename="admin-subscriptions")
+router.register(r"subscription-plans", SubscriptionPlanAdminViewSet, basename="admin-subscription-plans")
 
 urlpatterns = [
     path('', include(router.urls)),

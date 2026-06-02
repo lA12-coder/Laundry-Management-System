@@ -89,6 +89,7 @@ class SystemConfiguration(models.Model):
 
 class Testimonial(models.Model):
     customer_name = models.CharField(max_length=120)
+    customer_image = models.ImageField(upload_to="testimonials/", null=True, blank=True)
     rating = models.PositiveSmallIntegerField()
     review_text = models.TextField()
     is_approved_for_public = models.BooleanField(default=False)

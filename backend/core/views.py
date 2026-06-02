@@ -72,7 +72,7 @@ class PublicTestimonialsView(APIView):
 
     def get(self, request, *args, **kwargs):
         queryset = Testimonial.objects.filter(is_approved_for_public=True).order_by("-created_at")
-        serializer = PublicTestimonialSerializer(queryset, many=True)
+        serializer = PublicTestimonialSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

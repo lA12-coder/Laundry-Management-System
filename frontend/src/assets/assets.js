@@ -48,6 +48,7 @@ export const assets = {
   DryCleaning,
   Ironing,
   SpecialRequest,
+  BorderImg,
 };
 
 export const items = [

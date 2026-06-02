@@ -1,4 +1,5 @@
 from rest_framework import status, viewsets
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -37,6 +38,7 @@ class SystemConfigurationView(APIView):
 class TestimonialModeratorViewSet(viewsets.ModelViewSet):
     serializer_class = TestimonialSerializer
     permission_classes = [IsStaffAdminRole]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     queryset = Testimonial.objects.all().order_by("-created_at")
 
 
