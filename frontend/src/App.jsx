@@ -24,6 +24,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminSubscriptionReview from "./pages/admin/AdminSubscriptionReview";
 import AdminTestimonials from "./pages/admin/AdminTestimonials";
+import UserManagement from "./pages/admin/UserManagement";
 import ProfileSettings from "./pages/customer/ProfileSettings.tsx";
 import ClaimAccountPage from "./pages/customer/ClaimAccountPage";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
@@ -41,6 +42,7 @@ const ADMIN_LEVELS = [
 ];
 
 const ADMIN_WRITE_LEVELS = [AccessLevel.SUPERADMIN, AccessLevel.ADMIN];
+const MANAGER_LEVELS = [AccessLevel.SUPERADMIN, AccessLevel.ADMIN];
 
 function App() {
   return (
@@ -66,6 +68,14 @@ function App() {
           }
         />
         <Route
+          path="users"
+          element={
+            <ProtectedRoute allowedRoles={ADMIN_WRITE_LEVELS}>
+              <UserManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="customers"
           element={
             <ProtectedRoute allowedRoles={ADMIN_LEVELS}>
@@ -84,7 +94,7 @@ function App() {
         <Route
           path="partners"
           element={
-            <ProtectedRoute allowedRoles={ADMIN_LEVELS}>
+            <ProtectedRoute allowedRoles={MANAGER_LEVELS}>
               <PartnerManagement />
             </ProtectedRoute>
           }
@@ -92,7 +102,7 @@ function App() {
         <Route
           path="financials"
           element={
-            <ProtectedRoute allowedRoles={ADMIN_LEVELS}>
+            <ProtectedRoute allowedRoles={MANAGER_LEVELS}>
               <FinancialManagement />
             </ProtectedRoute>
           }
@@ -132,7 +142,7 @@ function App() {
         <Route
           path="logs"
           element={
-            <ProtectedRoute allowedRoles={[AccessLevel.SUPERADMIN]}>
+            <ProtectedRoute allowedRoles={MANAGER_LEVELS}>
               <AdminAuditLogs />
             </ProtectedRoute>
           }

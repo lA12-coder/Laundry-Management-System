@@ -15,7 +15,7 @@ from django.db.models.functions import Coalesce
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from core.permissions import IsStaffAdminRole
+from core.permissions import IsManagerOrSuperAdmin
 from orders.models import AdminActionLog, Order, TransactionLog
 from .models import LaundryPartner
 from .serializers import LaundryPartnerSerializer, PartnerCreateSerializer
@@ -27,7 +27,7 @@ class PartnerOversightViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsManagerOrSuperAdmin]
 
     def get_serializer_class(self):
         if self.action == "create":

@@ -14,9 +14,9 @@ import TshirtImg from "../assets/img/TshirtImg.png";
 import TrouserImg from "../assets/img/TrouserImg.png";
 import SuitImg from "../assets/img/SuitImg.png";
 import BorderImg from "../assets/img/BorderImg.png";
-import User1 from "../assets/img/User1.jpg";
-import User2 from "../assets/img/User1.jpg";
-import User3 from "../assets/img/User1.jpg";
+import LidetImg from "../assets/img/ProfileLidet.png";
+import KedestImg from "../assets/img/ProfileKedest.jpeg";
+import EyobImg from "../assets/img/ProfileEyob.jpeg";
 import OurStoryImg from "../assets/img/OurStoryImg.png";
 import Bubbles from "../assets/img/Bubbles.png";
 import ContactImg from "../assets/img/ContactImg.png";
@@ -27,6 +27,7 @@ import WashAndFold from "../assets/img/WashAndFold.jpg";
 import DryCleaning from "../assets/img/DryCleaning.png";
 import Ironing from "../assets/img/Ironing.png";
 import SpecialRequest from "../assets/img/SpecialRequest.jpg";
+
 
 export const assets = {
   Logo,
@@ -60,101 +61,25 @@ export const items = [
   { id: 6, name: "Blanket", price: 300, image: SuitImg },
 ];
 
-export const plans = [
-  {
-    name: "Weekly Plan",
-    price: "999",
-    period: "week",
-    features: [
-      "Full access to all standard services",
-      "Easy weekly billing",
-      "Cancel or upgrade anytime",
-      "Lorem ipsum loredo toredo kosum",
-    ],
-    buttonText: "Choose Weekly",
-    isFeatured: false,
-  },
-  {
-    name: "Monthly Plan",
-    price: "3999",
-    period: "month",
-    features: [
-      "Full service access",
-      "Priority support",
-      "Predictable monthly billing",
-      "Cancel or upgrade anytime",
-      "Better value than weekly",
-      "Cancel or upgrade anytime",
-    ],
-    buttonText: "Choose Monthly",
-    isFeatured: true, // This highlights the center card
-  },
-  {
-    name: "3-Month Plan",
-    price: "9,999",
-    period: "3-month",
-    features: [
-      "Full service access",
-      "Dedicated support",
-      "Locked pricing for 3 months",
-      "Best overall discount",
-    ],
-    buttonText: "Choose Quarterly",
-    isFeatured: false,
-  },
-];
-
-export const testimonials = [
-  {
-    name: "Samuel A.",
-    text: "FuaLaundry has completely simplified my week. The pickup and delivery are always on time, and everything comes back perfectly clean. Highly recommended!",
-    stars: 5,
-    date: "Dec 21, 2025",
-    image: User1,
-    border: BorderImg,
-  },
-  {
-    name: "Marta K.",
-    text: "I love how easy it is to order. The prices are fair, the service is fast, and the tracking feature gives me peace of mind. Truly a game-changer.",
-    stars: 4,
-    date: "Nov 1, 2025",
-    image: User2,
-    border: BorderImg,
-  },
-  {
-    name: "Lidiya D.",
-    text: "The best laundry experience I've ever had. Their customer service is great, and the free delivery makes it so convenient. I never worry about laundry anymore.",
-    stars: 4,
-    date: "September 15, 2025",
-    image: User3,
-    border: BorderImg,
-  },
-];
 
 export const teamMembers = [
   {
-    name: "Eyuel Getachew",
-    role: "Founder and CEO",
-    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec placerat odio quis enim semper.",
-    image: "/path-to-eyob.png",
+    name: "Eyob Abdissa",
+    role: "Co-Founder and CEO",
+    bio: "",
+    image: EyobImg,
   },
   {
     name: "Lidet Admassu",
     role: "Co-Founder & COO",
-    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec placerat odio quis enim semper.",
-    image: "/path-to-lidet.png",
+    bio: "",
+    image: LidetImg,
   },
   {
-    name: "Ermiyas Mulugeta",
-    role: "Co-Founder & Marketing Lead",
-    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec placerat odio quis enim semper.",
-    image: "/path-to-member3.png",
-  },
-  {
-    name: "Frehiwot",
-    ole: "Sales Manager",
-    bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec placerat odio quis enim semper.",
-    image: "/path-to-member3.png",
+    name: "Kedest Wubshet",
+    role: "Marketing Lead",
+    bio: "",
+    image: KedestImg,
   },
 ];
 

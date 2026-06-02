@@ -1,7 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const AboutVideo = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-20 bg-white px-6">
       <div className="max-w-5xl mx-auto text-center">
@@ -37,6 +39,7 @@ const AboutVideo = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="mt-16 bg-[#FD9837] text-white px-10 py-4 rounded-xl font-bold text-lg shadow-[0_10px_20px_rgba(253,152,55,0.3)] hover:bg-[#e88a2f] transition-colors"
+          onClick={() => navigate("/item-list")}
         >
           Schedule your pickup now
         </motion.button>

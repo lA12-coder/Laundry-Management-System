@@ -5,7 +5,7 @@ import AuditLogsWorkspace from "../../components/admin/audit/AuditLogsWorkspace"
 export default function AdminAuditLogs() {
   const { hasPermission } = useAuth();
 
-  if (!hasPermission(Permission.DELETE_AUDIT_LOGS)) {
+  if (!hasPermission(Permission.VIEW_AUDIT_LOGS)) {
     return null;
   }
 

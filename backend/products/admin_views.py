@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from .models import Product
 from .serializers import ProductSerializer
-from core.permissions import IsStaffAdminRole
+from core.permissions import IsManagerOrSuperAdmin
 
 class AdminProductViewSet(viewsets.ModelViewSet):
     """
@@ -9,4 +9,4 @@ class AdminProductViewSet(viewsets.ModelViewSet):
     """
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsManagerOrSuperAdmin]

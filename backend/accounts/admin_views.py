@@ -5,10 +5,11 @@ from django.db.models import Avg, Count, FloatField, Prefetch, Q, Value
 from django.db.models.functions import Coalesce
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
-from core.permissions import IsStaffAdminRole
-from orders.models import Order
+from core.permissions import IsManagerOrSuperAdmin, IsStaffAdminRole
+from orders.models import AdminActionLog, Order
 from .models import CustomerNotification, CustomerSubscription, SubscriptionPlan
 
 User = get_user_model()
@@ -55,14 +56,97 @@ class AdminUserListSerializer(serializers.ModelSerializer):
         return getattr(obj, "active_orders", 0)
 
 
-class AdminUserViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class AdminUserWriteSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=False,
+        min_length=8,
+    )
+    access_level = serializers.ChoiceField(
+        choices=["manager", "staff"],
+        required=False,
+        write_only=True,
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "full_name",
+            "email",
+            "phone_number",
+            "role",
+            "is_active",
+            "is_verified",
+            "password",
+            "access_level",
+        )
+        read_only_fields = ("id",)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate_phone_number(self, value):
+        from .utils import normalize_phone_number
+
+        return normalize_phone_number(value)
+
+    def validate(self, attrs):
+        role = attrs.get("role")
+        access_level = attrs.get("access_level")
+        request = self.context.get("request")
+        actor = getattr(request, "user", None)
+        target_role = role or getattr(self.instance, "role", None) or User.Role.CUSTOMER
+
+        if actor and actor.role == User.Role.ADMIN and not actor.is_superuser and not actor.is_staff:
+            raise serializers.ValidationError("Staff users cannot manage user accounts.")
+
+        # Managers can only manage staff-level admin accounts.
+        if actor and actor.role == User.Role.ADMIN and actor.is_staff and not actor.is_superuser:
+            if target_role != User.Role.ADMIN:
+                raise serializers.ValidationError(
+                    "Managers can only create or edit staff admin accounts."
+                )
+            if access_level == "manager":
+                raise serializers.ValidationError("Managers cannot create peer manager accounts.")
+
+        if target_role == User.Role.ADMIN:
+            if access_level == "manager":
+                attrs["is_staff"] = True
+            elif access_level == "staff":
+                attrs["is_staff"] = False
+        return attrs
+
+    def create(self, validated_data):
+        # Virtual RBAC input used for policy decisions only, not a model field.
+        validated_data.pop("access_level", None)
+        validated_data.pop("password", None)
+        return User.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        # Virtual RBAC input used for policy decisions only, not a model field.
+        validated_data.pop("access_level", None)
+        validated_data.pop("password", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+class AdminUserViewSet(viewsets.ModelViewSet):
     """
     Admin endpoint to list and manage all users.
     Supports filtering by role: ?role=customer | ?role=rider | ?role=partner
     Ghost users (auto-created, inactive) are included and flagged.
     """
     serializer_class = AdminUserListSerializer
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsManagerOrSuperAdmin]
+
+    def get_serializer_class(self):
+        if self.action in {"create", "update", "partial_update"}:
+            return AdminUserWriteSerializer
+        return AdminUserListSerializer
 
     def get_queryset(self):
         active_order_statuses = [
@@ -92,6 +176,89 @@ class AdminUserViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             )
 
         return queryset
+
+    def _ensure_actor_can_manage_target(self, target_user: User):
+        actor = self.request.user
+        if actor.is_superuser:
+            return
+
+        # Manager cannot modify/delete superadmin or another manager.
+        if target_user.is_superuser:
+            raise PermissionDenied("Managers cannot modify the superadmin account.")
+        if target_user.role != User.Role.ADMIN or target_user.is_staff:
+            raise PermissionDenied("Managers can only manage staff accounts.")
+
+    def _log_user_action(self, *, action: str, target: User, previous_value: str, new_value: str, metadata: dict):
+        AdminActionLog.objects.create(
+            admin_user=self.request.user,
+            action=action,
+            previous_value=previous_value,
+            new_value=new_value,
+            metadata={
+                "target_user_id": target.id,
+                "target_email": target.email,
+                **(metadata or {}),
+            },
+        )
+
+    def perform_create(self, serializer):
+        actor = self.request.user
+        user = serializer.save(
+            username=(serializer.validated_data.get("email") or serializer.validated_data.get("phone_number")),
+        )
+        password = serializer.validated_data.get("password")
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        if user.role != User.Role.ADMIN:
+            user.is_staff = False
+        user.save()
+
+        # Manager can only create staff account.
+        if actor.role == User.Role.ADMIN and actor.is_staff and not actor.is_superuser:
+            if user.role != User.Role.ADMIN or user.is_staff:
+                user.delete()
+                raise serializers.ValidationError("Managers can only create staff admin accounts.")
+
+        self._log_user_action(
+            action=AdminActionLog.Action.USER_CREATED,
+            target=user,
+            previous_value="",
+            new_value=f"role={user.role},is_staff={user.is_staff},is_active={user.is_active}",
+            metadata={"event": "user_created"},
+        )
+
+    def perform_update(self, serializer):
+        target = self.get_object()
+        self._ensure_actor_can_manage_target(target)
+        previous = f"role={target.role},is_staff={target.is_staff},is_active={target.is_active}"
+        user = serializer.save()
+        password = serializer.validated_data.get("password")
+        if password:
+            user.set_password(password)
+            user.save(update_fields=["password"])
+        self._log_user_action(
+            action=AdminActionLog.Action.USER_UPDATED,
+            target=user,
+            previous_value=previous,
+            new_value=f"role={user.role},is_staff={user.is_staff},is_active={user.is_active}",
+            metadata={"event": "user_updated"},
+        )
+
+    def perform_destroy(self, instance):
+        actor = self.request.user
+        if actor.id == instance.id:
+            raise PermissionDenied("You cannot delete your own account.")
+        self._ensure_actor_can_manage_target(instance)
+        self._log_user_action(
+            action=AdminActionLog.Action.USER_DELETED,
+            target=instance,
+            previous_value=f"role={instance.role},is_staff={instance.is_staff},is_active={instance.is_active}",
+            new_value="deleted",
+            metadata={"event": "user_deleted"},
+        )
+        instance.delete()
 
 
 class CustomerDirectorySerializer(serializers.ModelSerializer):
@@ -217,7 +384,7 @@ class RiderFleetSerializer(serializers.ModelSerializer):
 
 class RiderFleetViewSet(viewsets.ModelViewSet):
     serializer_class = RiderFleetSerializer
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsManagerOrSuperAdmin]
 
     ACTIVE_ORDER_STATUSES = [
         Order.Status.PENDING,

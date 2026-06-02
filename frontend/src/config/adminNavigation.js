@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Users,
+  UserCog,
   Wallet,
   Settings,
   Bike,
@@ -30,6 +31,12 @@ export const ADMIN_NAV_ITEMS = [
     href: "/admin/orders",
     icon: ShoppingCart,
     permission: Permission.MANAGE_ORDERS,
+  },
+  {
+    name: "Users",
+    href: "/admin/users",
+    icon: UserCog,
+    permission: Permission.MANAGE_USERS,
   },
   {
     name: "Customers",
@@ -79,7 +86,7 @@ export const ADMIN_NAV_ITEMS = [
     name: "Audit Logs",
     href: "/admin/logs",
     icon: ScrollText,
-    permission: Permission.DELETE_AUDIT_LOGS,
+    permission: Permission.VIEW_AUDIT_LOGS,
   },
   {
     name: "Settings",

@@ -1,5 +1,8 @@
+import socket
+from smtplib import SMTPAuthenticationError
+
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
@@ -116,13 +119,34 @@ class ContactSubmitView(APIView):
             f"Message:\n{payload['message']}"
         )
         try:
-            send_mail(
+            recipient = getattr(settings, "CONTACT_FORM_RECIPIENT", "fualaundry16@gmail.com")
+            email = EmailMessage(
                 subject=subject,
-                message=body,
+                body=body,
                 from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-                recipient_list=["fualaundry16@gmail.com"],
-                fail_silently=False,
+                to=[recipient],
                 reply_to=[payload["email"]],
+            )
+            email.send(fail_silently=False)
+        except SMTPAuthenticationError:
+            return Response(
+                {
+                    "message": (
+                        "Email server rejected login. For Gmail, set EMAIL_HOST_PASSWORD "
+                        "to a Google App Password (not your normal account password)."
+                    )
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        except socket.gaierror as exc:
+            return Response(
+                {
+                    "message": (
+                        f"Unable to reach the mail server ({exc}). "
+                        "If you run the API in Docker on Linux, use "
+                                            )
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         except Exception as exc:
             return Response(

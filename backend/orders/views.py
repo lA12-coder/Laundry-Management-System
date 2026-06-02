@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 
-from core.permissions import IsStaffAdminRole, IsPartnerRole
+from core.permissions import IsAdminOperatorRole, IsManagerOrSuperAdmin, IsPartnerRole
 from partners.models import LaundryPartner
 from .models import (
     Order,
@@ -229,7 +229,7 @@ class OrderManagementViewSet(viewsets.ModelViewSet):
     Supports server-side pagination, sorting, and filtering via query params.
     """
     serializer_class = OrderListSerializer
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsAdminOperatorRole]
     pagination_class = AdminOrderPagination
 
     ALLOWED_ORDERING_FIELDS = {
@@ -427,7 +427,7 @@ class DashboardMetricsViewSet(viewsets.ViewSet):
     Business intelligence telemetry for the admin dashboard.
     ?period=1d|7d|30d|12m
     """
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsManagerOrSuperAdmin]
 
     def list(self, request):
         period = request.query_params.get("period", "7d")
@@ -436,7 +436,7 @@ class DashboardMetricsViewSet(viewsets.ViewSet):
 
 class FinancialTransactionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = TransactionLogSerializer
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsManagerOrSuperAdmin]
     pagination_class = AdminOrderPagination
     queryset = TransactionLog.objects.select_related("order", "order__partner").all()
 
@@ -527,7 +527,7 @@ class FinancialTransactionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet
 
 class AdminActionLogViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     serializer_class = AdminActionLogSerializer
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsManagerOrSuperAdmin]
     pagination_class = AdminOrderPagination
 
     def get_queryset(self):
@@ -737,7 +737,7 @@ class PartnerSettlementViewSet(viewsets.ViewSet):
     Admin settlement engine for clearing partner outstanding balances.
     """
 
-    permission_classes = [IsStaffAdminRole]
+    permission_classes = [IsManagerOrSuperAdmin]
 
     def list(self, request):
         partner_id = request.query_params.get("partner_id")
@@ -888,18 +888,17 @@ class ClothCategoryViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:
             return []
-        return [IsStaffAdminRole()]
+        return [IsAdminOperatorRole()]
 
     def get_queryset(self):
         qs = ClothCategory.objects.all().order_by("sort_order", "name")
         user = self.request.user
-        is_staff_admin = bool(
+        is_pricing_operator = bool(
             user
             and user.is_authenticated
-            and user.is_staff
-            and getattr(user, "role", None) == User.Role.ADMIN
+            and (user.is_superuser or getattr(user, "role", None) == User.Role.ADMIN)
         )
-        if not is_staff_admin:
+        if not is_pricing_operator:
             qs = qs.filter(is_active=True)
         return qs
 
@@ -933,7 +932,7 @@ class PriceListViewSet(viewsets.ModelViewSet):
         """Anyone can read the catalogue; only staff admins can mutate it."""
         if self.action in ["list", "retrieve"]:
             return []
-        return [IsStaffAdminRole()]
+        return [IsAdminOperatorRole()]
 
     def get_queryset(self):
         qs = (
@@ -942,13 +941,12 @@ class PriceListViewSet(viewsets.ModelViewSet):
             .order_by("category__sort_order", "cloth_name", "size")
         )
         user = self.request.user
-        is_staff_admin = bool(
+        is_pricing_operator = bool(
             user
             and user.is_authenticated
-            and user.is_staff
-            and getattr(user, "role", None) == User.Role.ADMIN
+            and (user.is_superuser or getattr(user, "role", None) == User.Role.ADMIN)
         )
-        if not is_staff_admin:
+        if not is_pricing_operator:
             qs = qs.filter(is_active=True)
         return qs
 

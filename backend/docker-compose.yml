@@ -30,6 +30,12 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    # Override Docker embedded DNS when it cannot forward (common on Fedora + firewalld).
+    # Set DOCKER_DNS in .env to your router/gateway DNS (see `resolvectl status`).
+    dns:
+      - ${DOCKER_DNS:-8.8.8.8}
+      - 8.8.4.4
+      - 1.1.1.1
     depends_on:
       db:
         condition: service_healthy

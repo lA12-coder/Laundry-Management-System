@@ -13,10 +13,8 @@ const MissionVision = () => {
         >
           <h3 className="text-3xl font-black italic mb-4">Our Mission</h3>
           <p className="text-gray-600 leading-relaxed italic">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec
-            placerat odio quis enim semper malesuada. Nulla ornare viverra
-            dolor. Vestibulum ante ipsum primis in faucibus orci luctus et
-            ultrices posuere cubilia curae;
+          To provide an effortless laundry experience by blending pristine cleaning standards with a fast, 
+          dependable pickup and delivery service that fits perfectly into the modern routine.
           </p>
         </motion.div>
 
@@ -28,10 +26,8 @@ const MissionVision = () => {
         >
           <h3 className="text-3xl font-black italic mb-4">Our Vision</h3>
           <p className="text-gray-600 leading-relaxed italic">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec
-            placerat odio quis enim semper malesuada. Nulla ornare viverra
-            dolor. Vestibulum ante ipsum primis in faucibus orci luctus et
-            ultrices posuere cubilia curae;
+          To become the country’s most trusted laundry service provider, recognized for absolute reliability, 
+          flawless presentation, high-quality cleaning service, and an uncompromising commitment to customer satisfaction.
           </p>
         </motion.div>
       </div>

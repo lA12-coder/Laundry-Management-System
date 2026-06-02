@@ -4,7 +4,7 @@ import { assets } from "../../assets/assets";
 
 const OurStory = () => {
   const [stats, setStats] = useState({
-    orders: 20,
+    orders: 500,
     partners: 0,
     customers: 500,
   });
@@ -13,7 +13,7 @@ const OurStory = () => {
     const interval = setInterval(() => {
       setStats((prev) => {
         const next = {
-          orders: prev.orders < 100 ? prev.orders + 1 : prev.orders,
+          orders: prev.orders < 1100 ? prev.orders + 10 : prev.orders,
           partners: prev.partners < 20 ? prev.partners + 1 : prev.partners,
           customers:
             prev.customers < 1000 ? prev.customers + 10 : prev.customers,

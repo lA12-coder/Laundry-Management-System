@@ -239,6 +239,9 @@ class AdminActionLog(models.Model):
         PARTNER_SETTLEMENT = "partner_settlement", "Partner Settlement"
         PARTNER_APPROVAL = "partner_approval", "Partner Approval"
         PARTNER_DEACTIVATION = "partner_deactivation", "Partner Deactivation"
+        USER_CREATED = "user_created", "User Created"
+        USER_UPDATED = "user_updated", "User Updated"
+        USER_DELETED = "user_deleted", "User Deleted"
 
     admin_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

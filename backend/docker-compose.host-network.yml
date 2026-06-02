@@ -1,0 +1,9 @@
+# Optional override when Docker bridge has no outbound internet (common on Fedora + firewalld).
+# Usage: docker compose -f docker-compose.yml -f docker-compose.host-network.yml up -d api
+services:
+  api:
+    network_mode: host
+    ports: []
+    environment:
+      DB_HOST: 127.0.0.1
+      REDIS_URL: redis://127.0.0.1:6379/0

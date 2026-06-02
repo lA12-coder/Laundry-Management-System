@@ -7,8 +7,7 @@ import {
   fetchPublicLaundryLocations,
 } from "../../services/engagementApi";
 
-const DEFAULT_CENTER = { lat: 9.03, lng: 38.74 };
-
+const DEFAULT_CENTER = { lat: 8.514477, lng: 39.269257 };
 async function resolveMapConstructors(maps) {
   if (typeof maps.Map === "function") {
     return {
