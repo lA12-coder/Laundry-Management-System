@@ -143,11 +143,15 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173",
+        "https://fualaundry-frontend.onrender.com",
     ).split(",")
     if origin.strip()
 ]
+# Always allow the configured frontend origin (Render manual deploys often omit CORS_ALLOWED_ORIGINS).
+if FRONT_END_URL and FRONT_END_URL not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(FRONT_END_URL)
 CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOW_CREDENTIALS = True
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
