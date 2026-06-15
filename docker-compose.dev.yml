@@ -1,0 +1,25 @@
+# Development overrides — Vite hot reload + Django runserver + source mounts.
+services:
+  api:
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+      - media_data:/app/media
+    dns:
+      - ${DOCKER_DNS:-8.8.8.8}
+      - 8.8.4.4
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      VITE_API_URL: /api
+      VITE_DEV_API_PROXY: http://api:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "${FRONTEND_PUBLISH_PORT:-5173}:5173"
+    command: npm run dev -- --host 0.0.0.0 --port 5173

@@ -9,3 +9,4 @@ redis==5.0.1
 gunicorn==21.2.0
 python-dotenv
 djangorestframework-simplejwt
+whitenoise==6.6.0

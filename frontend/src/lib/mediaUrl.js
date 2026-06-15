@@ -1,8 +1,10 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
-/** Origin for uploaded media (strips trailing /api). */
+/** Origin for uploaded media (strips trailing /api). Relative when behind nginx. */
 export function getMediaOrigin() {
-  return API_BASE.replace(/\/api\/?$/, "");
+  const base = API_BASE.replace(/\/api\/?$/, "");
+  if (!base || base === "/") return "";
+  return base;
 }
 
 /**

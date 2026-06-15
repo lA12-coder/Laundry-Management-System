@@ -3,6 +3,7 @@ node_modules/
 venv/
 .env
 backend/media/
+backend/staticfiles/
 # Logs
 logs
 *.log

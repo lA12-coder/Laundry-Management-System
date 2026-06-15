@@ -20,6 +20,12 @@ from .serializers import (
 
 
 @api_view(["GET"])
+def health_check(request):
+    """Lightweight health probe for load balancers and Docker."""
+    return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
 def api_root(request, format=None):
     """
     API Root — lists all available API endpoints.

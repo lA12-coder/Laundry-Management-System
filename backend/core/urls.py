@@ -9,10 +9,12 @@ from .views import (
     PublicTestimonialsView,
     TestimonialSubmitView,
     api_root,
+    health_check,
 )
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/health/", health_check, name="health-check"),
     path("api/", api_root, name="api-root"),
     path("api/contact/submit/", ContactSubmitView.as_view(), name="public_contact_submit"),
     path("api/testimonials/public/", PublicTestimonialsView.as_view(), name="public_testimonials"),
@@ -39,5 +41,5 @@ urlpatterns = [
     ])),
 ]
 
-if settings.DEBUG:
+if settings.DEBUG or settings.SERVE_MEDIA:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

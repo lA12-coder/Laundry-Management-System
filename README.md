@@ -163,6 +163,37 @@ cp .env.example .env
 npm run dev
 ```
 
+### Docker (recommended)
+
+Full stack with PostgreSQL, Redis, API (Gunicorn), and nginx frontend.
+
+```bash
+# From repository root
+cp backend/.env.example backend/.env   # edit secrets, DB password, email
+cp frontend/.env.example frontend/.env # optional for local Vite; Docker uses build args
+cp .env.example .env                   # optional port overrides
+
+# Development — hot reload (Vite :5173, API :8000)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+# Production-like — nginx :8080, Gunicorn API
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+# Create admin user (first time)
+docker compose exec api python manage.py createsuperuser
+
+# Health check
+curl http://localhost:8000/api/health/
+curl http://localhost:8080/            # production frontend
+```
+
+**Fedora / firewalld:** if email or outbound DNS fails inside Docker, add host-network override for the API:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.host-network.yml up -d api
+```
+
+**Render deployment:** `render.yaml` is included. Set `VITE_API_URL` to your Render API URL when building the static frontend.
+
 ### Standard Environment Variables (Placeholder)
 ```json
 {
