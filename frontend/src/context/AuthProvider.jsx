@@ -114,14 +114,6 @@ export const AuthProvider = ({ children }) => {
     throw new Error("Google login endpoint is not implemented on backend.");
   };
 
-  const verifyEmail = async (uid, token) => {
-    return api.get(`/accounts/verify-email/${uid}/${token}/`);
-  };
-
-  const resendVerificationEmail = async (email) => {
-    return api.post("/accounts/resend-verification-email/", { email });
-  };
-
   const ghostSession = async (phone_number) => {
     dispatch(loginStart());
     try {
@@ -148,8 +140,6 @@ export const AuthProvider = ({ children }) => {
         register,
         googleLogin,
         logout: logoutUser,
-        verifyEmail,
-        resendVerificationEmail,
         ghostSession,
         loading,
         isAuthenticated,

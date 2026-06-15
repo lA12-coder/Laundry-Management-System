@@ -37,8 +37,6 @@ def api_root(request, format=None):
             "logout": reverse("logout", request=request, format=format),
             "token_refresh": reverse("token_refresh", request=request, format=format),
             "me": reverse("me", request=request, format=format),
-            "verify_email": "POST /api/accounts/verify-email/<uidb64>/<token>/",
-            "resend_verification_email": reverse("resend_verification_email", request=request, format=format),
             "subscription_plans": reverse("subscription_plan_list", request=request, format=format),
             "subscription_checkout": reverse("subscription_checkout", request=request, format=format),
             "my_subscriptions": reverse("subscription_me", request=request, format=format),

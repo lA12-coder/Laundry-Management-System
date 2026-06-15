@@ -1,4 +1,3 @@
-from django.utils.http import urlsafe_base64_decode
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework.decorators import permission_classes
@@ -13,11 +12,9 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
-from .signals import send_verification_email
 
 User = get_user_model()
 
@@ -156,13 +153,6 @@ class LoginView(TokenObtainPairView):
             )
 
         user = serializer.user
-        if not user.is_verified:
-            return json_response(
-                status_text = "error",
-                message = "Please verify your email before logging in.",
-                http_status = status.HTTP_401_UNAUTHORIZED
-            )
-
         if not user.is_active:
             return json_response(
                 status_text = "error",
@@ -363,66 +353,6 @@ class SecuritySettingsView(APIView):
             http_status=status.HTTP_200_OK,
         )
 
-
-
-class VerifyEmailView(APIView):
-    permission_classes = [AllowAny]
-    def get(self, request, uidb64, token):
-        try:
-            uid = urlsafe_base64_decode(uidb64).decode('utf-8')
-            user = User.objects.get(pk=uid)
-        except (User.DoesNotExist, ValueError, TypeError, OverflowError):
-            user = None
-
-        if user is not None and default_token_generator.check_token(user, token):
-            user.is_verified = True
-            user.save()
-            return json_response(
-                status_text="success",
-                message="Email verified successfully.",
-                http_status=status.HTTP_200_OK,
-            )
-
-        return json_response(
-            status_text="error",
-            message="Invalid or expired verification link.",
-            http_status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    def post(self, request, uidb64, token):
-        return self.get(request, uidb64, token)
-
-class ResendVerificationEmailView(APIView):
-    permission_classes = [AllowAny]
-    
-    def post(self,request):
-        email = request.data.get("email")
-        if not email:
-            return json_response(
-                status_text="error",
-                message="Email is required.",
-                errors={"email": ["This field is required."]},
-                http_status=status.HTTP_400_BAD_REQUEST,
-            )
-        user = User.objects.filter(email=email).first()
-        if not user:
-            return json_response(
-                status_text="error",
-                message="User not found.",
-                http_status=status.HTTP_404_NOT_FOUND,
-            )
-        if user.is_verified:
-            return json_response(
-                status_text="error",
-                message="User is already verified.",
-                http_status=status.HTTP_400_BAD_REQUEST,
-            )
-        send_verification_email(sender=User,instance=user,created=True)
-        return json_response(
-            status_text="success",
-            message="Verification email sent successfully.",
-            http_status=status.HTTP_200_OK,
-        )
 
 
 def _issue_token_pair(user: User) -> dict[str, Any]:

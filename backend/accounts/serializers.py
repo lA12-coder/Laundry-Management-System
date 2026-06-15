@@ -51,6 +51,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             email=validated_data["email"].strip().lower(),
             phone_number=validated_data["phone_number"],
             password=validated_data["password"],
+            is_verified=True,
         )
 
 

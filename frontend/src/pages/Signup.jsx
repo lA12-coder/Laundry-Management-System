@@ -35,7 +35,7 @@ const SignupPage = () => {
         password: data.password,
       });
       navigate("/login", {
-        state: { message: "Registration successful. Check your email to verify your account." },
+        state: { message: "Registration successful. You can log in now." },
       });
     } catch (err) {
       // Error handled in context

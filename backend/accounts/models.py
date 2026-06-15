@@ -13,7 +13,7 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=15) 
     role =  models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER)
-    is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

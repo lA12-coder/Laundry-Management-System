@@ -9,7 +9,6 @@ import ContactUs from "./pages/ContactUs";
 import ServicesPage from "./pages/ServicePage";
 import ItemListPage from "./pages/ItemList";
 import CheckoutPage from "./pages/CheckoutPage";
-import VerifyEmailPage from "./pages/VerifyEmail";
 import Layout from "./components/layout/Layout";
 import "./App.css";
 import AdminLayout from "./components/admin/AdminLayout";
@@ -212,7 +211,6 @@ function App() {
       {/* ─── Auth ──────────────────────────────────────────────── */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
-      <Route path="/verify-email/:uid/:token" element={<VerifyEmailPage />} />
     </Routes>
   );
 }

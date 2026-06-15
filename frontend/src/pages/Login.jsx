@@ -17,12 +17,10 @@ const LoginPage = () => {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm();
-  const { login, resendVerificationEmail } = useContext(AuthContext);
+  const { login } = useContext(AuthContext);
   const { loading, error } = useSelector((state) => state.auth);
-  const emailValue = watch("email");
 
   const onLogin = async (data) => {
     try {
@@ -105,24 +103,6 @@ const LoginPage = () => {
             LOG IN
           </button>
 
-          <button
-            type="button"
-            onClick={async () => {
-              if (!emailValue) return;
-              try {
-                await resendVerificationEmail(emailValue);
-                navigate("/login", {
-                  replace: true,
-                  state: { message: "Verification email resent successfully." },
-                });
-              } catch (resendError) {
-                // Global auth error state will display backend message.
-              }
-            }}
-            className="w-full mt-4 text-sm text-[#4c84a4] font-semibold hover:underline"
-          >
-            Resend verification email
-          </button>
           <p className="text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link to="/signup" className="text-[#FD9837] font-bold italic">
