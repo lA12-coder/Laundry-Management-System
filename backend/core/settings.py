@@ -14,6 +14,9 @@ ALLOWED_HOSTS = [
     for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
     if host.strip()
 ]
+_render_hostname = os.getenv('RENDER_EXTERNAL_HOSTNAME', '').strip()
+if _render_hostname and _render_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_hostname)
 FRONT_END_URL = os.getenv('FRONT_END_URL', 'http://localhost:5173').rstrip('/')
 
 INSTALLED_APPS = [
@@ -148,7 +151,9 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True") == "True"
+    # Render health checks hit the container over HTTP without X-Forwarded-Proto.
+    _ssl_redirect_default = "False" if os.getenv("RENDER") else "True"
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", _ssl_redirect_default) == "True"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
